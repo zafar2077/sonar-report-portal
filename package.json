@@ -1,0 +1,39 @@
+{
+  "name": "sonar-report-portal",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "next dev --webpack --hostname 127.0.0.1 --port 5173",
+    "build": "next build --webpack",
+    "start": "next start --hostname 127.0.0.1 --port 5173",
+    "test": "node --import tsx --test tests/security.test.ts",
+    "test:integration": "node --import tsx --test tests/integration.test.ts",
+    "test:http": "node --import tsx --test tests/http.test.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint app lib tests scripts",
+    "admin:create": "node --import tsx scripts/create-admin.ts"
+  },
+  "dependencies": {
+    "mongodb": "^6.21.0",
+    "next": "16.2.6",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.2.1",
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.6",
+    "mongodb-memory-server-core": "11.2.0",
+    "tailwindcss": "4.2.1",
+    "tsx": "^4.20.0",
+    "typescript": "5.9.3"
+  },
+  "type": "module",
+  "displayName": "Sonar Report Portal"
+}

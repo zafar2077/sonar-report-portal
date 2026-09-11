@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+.env*
+!.env.example
+*.log
+.sites-runtime/
+.vinext/
+.wrangler/
+worker/
+scripts/build-verified.sh
+scripts/install-ci.sh
+scripts/sites-env.sh
+scripts/validate-artifact.sh
+tests/rendered-html.test.mjs

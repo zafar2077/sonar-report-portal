@@ -1,0 +1,36 @@
+/* Account screens extend the existing portal theme without changing report styles. */
+.auth-screen{min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--cream)}
+.auth-card{width:min(100%,440px);padding:32px;border:1px solid var(--line);border-radius:16px;background:var(--paper);box-shadow:0 12px 40px #24163812}
+.auth-brand{background:#54226f;padding:18px;border-radius:10px;margin-bottom:26px}
+.auth-brand img{display:block;max-width:210px;width:100%;height:auto;margin:auto;mix-blend-mode:screen}
+.auth-card h1,.users-header h1{font:400 32px Georgia,serif;margin:0 0 10px}
+.auth-card>p{color:var(--muted);line-height:1.6}
+.account-form{display:grid;gap:18px;margin-top:24px;font-size:16px}
+.account-form label{display:grid;gap:8px;font-size:14px;font-weight:600}
+.account-form input,.account-form select{width:100%;min-width:0;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:white;color:var(--ink);font-size:16px}
+.account-form input:focus,.account-form select:focus{outline:2px solid #71358f;outline-offset:2px}
+.account-primary{border:0;border-radius:8px;background:#71358f;color:white;min-height:44px;padding:10px 18px;font-size:15px;font-weight:600}
+.account-primary:hover{background:#54226f}
+.account-primary:disabled,.user-actions button:disabled{opacity:.6;cursor:wait}
+.account-error{background:#fff0ef;border:1px solid #e8b5b0;color:#972b26;padding:12px;border-radius:8px;font-size:14px;line-height:1.5}
+.account-message{background:#f2edf7;border:1px solid #d8c4e3;color:#54226f;padding:12px;border-radius:8px;font-size:14px;line-height:1.5}
+.account-help,.account-form small{font-size:13px!important;color:var(--muted);line-height:1.6}
+.account-controls{display:flex;gap:14px;justify-content:flex-end;align-items:center;flex-wrap:wrap;margin-bottom:20px;font-size:14px}
+.account-controls a{color:#71358f}.account-controls button,.user-actions button,.reset-form>button:not(.account-primary){background:white;border:1px solid var(--line);border-radius:7px;padding:9px 12px;color:var(--ink);font-size:14px}
+.users-screen{max-width:1240px;margin:auto;padding:36px 24px;color:var(--ink)}
+.users-header{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:30px}.users-header a{color:#71358f}.users-header h1{margin-top:16px}
+.users-grid{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:24px}
+.account-panel{padding:26px;background:var(--paper);border:1px solid var(--line);border-radius:14px;height:max-content}
+.account-panel h2{font:400 24px Georgia,serif;margin:0 0 18px}
+.user-row{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between;border-top:1px solid var(--line);padding:18px 0}
+.user-row strong,.user-row span,.user-row small{display:block;overflow-wrap:anywhere}.user-row strong{font-size:16px}.user-row span{font-size:14px;margin:6px 0}.user-row small{font-size:13px;color:var(--muted)}
+.user-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.reset-form{flex-basis:100%;margin:0}
+.project-picker{border:1px solid var(--line);border-radius:9px;padding:12px;display:grid;gap:8px;max-height:260px;overflow:auto}
+.project-picker legend{padding:0 6px;font-size:14px;font-weight:600}
+.account-form .project-option{display:flex;grid-template-columns:none;align-items:flex-start;gap:10px;padding:8px;border-radius:7px;font-weight:400;cursor:pointer}
+.account-form .project-option:hover{background:#f8f4fa}
+.account-form .project-option input{width:16px;min-height:16px;height:16px;margin:3px 0 0;accent-color:#71358f;flex:0 0 auto}
+.project-option span,.project-option strong,.project-option small{display:block}.project-option strong{font-size:14px}.project-option small{font-size:11px!important;overflow-wrap:anywhere}
+.access-form{flex-basis:100%;margin:0}.access-actions{display:flex;gap:10px;flex-wrap:wrap}.access-actions button:not(.account-primary){background:white;border:1px solid var(--line);border-radius:7px;padding:9px 12px;color:var(--ink)}
+@media(max-width:760px){.users-grid{grid-template-columns:1fr}.users-header{display:block}.account-controls{justify-content:flex-start}.auth-card{padding:24px}.users-screen{padding:24px 16px}}
+@media print{.account-controls{display:none!important}}
