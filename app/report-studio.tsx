@@ -50,6 +50,27 @@ const reportTypes: { id: ReportType; title: string; description: string; badge: 
   { id: "full", title: "Full engineering", description: "All measures, ratings and prioritized issues.", badge: "Detailed" },
 ];
 
+const owaspTop10 = [
+  ["A01", "Broken Access Control"],
+  ["A02", "Cryptographic Failures"],
+  ["A03", "Injection"],
+  ["A04", "Insecure Design"],
+  ["A05", "Security Misconfiguration"],
+  ["A06", "Vulnerable and Outdated Components"],
+  ["A07", "Identification and Authentication Failures"],
+  ["A08", "Software and Data Integrity Failures"],
+  ["A09", "Security Logging and Monitoring Failures"],
+  ["A10", "Server-Side Request Forgery (SSRF)"],
+] as const;
+
+function owaspCategory(tags: string[] = []) {
+  for (const tag of tags) {
+    const match = tag.toLowerCase().match(/owasp(?:top10)?[-_: ]*a0?(10|[1-9])(?:[-_: ]*2021)?/);
+    if (match) return `A${match[1].padStart(2, "0")}`;
+  }
+  return null;
+}
+
 const metricLabels: Record<string, string> = {
   reliability_issues: "Reliability issues", security_issues: "Security issues", security_hotspots: "Security hotspots",
   maintainability_issues: "Maintainability issues", coverage: "Coverage", duplicated_lines_density: "Duplication",
@@ -134,10 +155,30 @@ export default function ReportStudio({ user }: { user: PublicUser }) {
   const selectedProject = projects.find(p => p.key === selected) || projects[0];
   const filteredFindings = useMemo(() => {
     if (!report) return [];
-    if (reportType === "owasp") return report.findings.filter(f => f.tags?.some(t => t.startsWith("owasp")) || f.type === "VULNERABILITY" || f.type === "SECURITY_HOTSPOT");
-    if (reportType === "cwe") return report.findings.filter(f => f.tags?.includes("cwe") || f.type === "VULNERABILITY");
+    if (reportType === "owasp") return report.findings.filter(f => owaspCategory(f.tags) !== null);
+    if (reportType === "cwe") return report.findings.filter(f => f.tags?.some(t => /^cwe[-_: ]*\d+/i.test(t)));
     return report.findings;
   }, [report, reportType]);
+  const frameworkGroups = useMemo(() => {
+    if (!report || (reportType !== "owasp" && reportType !== "cwe")) return [];
+    if (reportType === "owasp") {
+      const counts = new Map<string, number>(owaspTop10.map(([code]) => [code, 0]));
+      for (const finding of filteredFindings) {
+        const category = owaspCategory(finding.tags);
+        if (category) counts.set(category, (counts.get(category) || 0) + 1);
+      }
+      return owaspTop10.map(([code, title]) => [`${code} · ${title}`, counts.get(code) || 0] as [string, number]);
+    }
+    const prefix = "cwe";
+    const groups = new Map<string, number>();
+    for (const finding of filteredFindings) {
+      const tags = (finding.tags || []).filter(tag => tag.toLowerCase().startsWith(prefix));
+      if (!tags.length) groups.set("Unmapped security finding", (groups.get("Unmapped security finding") || 0) + 1);
+      for (const tag of tags) groups.set(tag.toUpperCase().replaceAll("-", " "), (groups.get(tag.toUpperCase().replaceAll("-", " ")) || 0) + 1);
+    }
+    return [...groups.entries()].sort((a, b) => b[1] - a[1]);
+  }, [filteredFindings, report, reportType]);
+  const reportLabel = reportType === "executive" ? "Executive report" : reportType === "owasp" ? "OWASP Top 10 report" : reportType === "cwe" ? "CWE Top 25 report" : "Full engineering report";
 
   async function generateReport() {
     setLoading(true); setReport(null);
@@ -201,7 +242,7 @@ export default function ReportStudio({ user }: { user: PublicUser }) {
             <div className="project-monogram">{selectedProject?.name.split(" ").map(w => w[0]).slice(0, 2).join("")}</div>
             <h3>{selectedProject?.name}</h3><code>{selected}</code>
             <dl><div><dt>Framework</dt><dd>{reportTypes.find(t => t.id === reportType)?.title}</dd></div><div><dt>Branch</dt><dd>{branch}</dd></div><div><dt>Output</dt><dd>Interactive + PDF</dd></div></dl>
-            <div className="included"><span>INCLUDED</span><p>✓ Quality gate & ratings</p><p>✓ Executive risk summary</p><p>✓ Prioritized issue register</p><p>✓ Coverage & duplication</p></div>
+            <div className="included"><span>INCLUDED</span>{reportType === "executive" ? <><p>✓ Release decision & ratings</p><p>✓ Quality trends and gate</p><p>✓ Top management risks</p><p>✓ Coverage & duplication</p></> : reportType === "owasp" ? <><p>✓ OWASP Top 10 (2021) matrix</p><p>✓ Category-mapped findings</p><p>✓ Security rating & hotspots</p><p>✓ Exportable issue register</p></> : reportType === "cwe" ? <><p>✓ CWE-tagged weaknesses</p><p>✓ Weakness distribution</p><p>✓ Security rating & hotspots</p><p>✓ Exportable issue register</p></> : <><p>✓ Complete quality trends</p><p>✓ All gate conditions</p><p>✓ Full issue distribution</p><p>✓ Complete issue register</p></>}</div>
             <button className="generate" onClick={generateReport} disabled={loading || branchesLoading || !selected || !branch || !projects.length}>{loading ? <><i className="spinner" />Building report…</> : <>Generate report <span>→</span></>}</button>
             <small>No analysis data is stored by the portal.</small>
           </aside>
@@ -211,7 +252,7 @@ export default function ReportStudio({ user }: { user: PublicUser }) {
           <div className="report-actions"><button onClick={() => setReport(null)}>← New report</button><div><button onClick={exportCsv}>↓ CSV</button><button className="primary" onClick={() => window.print()}>Export PDF</button></div></div>
           <article className="report-paper">
             <header className="report-cover">
-              <div className="report-brand-row"><img className="report-logo" src="/codebase-technologies-logo.png" alt="Codebase Technologies" /><span>CODE QUALITY · EXECUTIVE REPORT</span></div>
+              <div className="report-brand-row"><img className="report-logo" src="/codebase-technologies-logo.png" alt="Codebase Technologies" /><span>CODE QUALITY · {reportLabel.toUpperCase()}</span></div>
               <div className="report-title-row">
                 <div><span className="report-kicker">{reportTypes.find(t => t.id === reportType)?.title}</span><h2>{report.project.name}</h2><p>{report.project.key}</p></div>
                 <div className={`gate ${report.gate.status === "OK" ? "pass" : "fail"}`}><span>QUALITY GATE</span><strong>{report.gate.status === "OK" ? "Passed" : "Failed"}</strong><small>{report.gate.status === "OK" ? "Policy requirements met" : "Action required before release"}</small></div>
@@ -233,22 +274,25 @@ export default function ReportStudio({ user }: { user: PublicUser }) {
             </section>
 
             <section className="metric-strip" aria-label="Analysis metrics">{headlineMetrics.map(k => <div key={k}><span>{metricLabels[k]}</span><strong className={ratingTone(report.metrics[k])}>{report.metrics[k] ?? "0"}{["coverage", "duplicated_lines_density"].includes(k) ? "%" : ""}</strong></div>)}</section>
-            <section className="report-section"><div className="section-title"><span>01</span><div><h3>Executive summary</h3><p>The release posture at a glance.</p></div></div><div className="signal-grid">
+            {reportType === "executive" && <section className="report-section"><div className="section-title"><span>01</span><div><h3>Executive summary</h3><p>The release posture at a glance.</p></div></div><div className="signal-grid">
               <div className="risk-callout"><span>RELEASE DECISION</span><h4>{report.gate.status === "OK" ? "Ready with monitoring" : "Remediation required"}</h4><p>{report.gate.status === "OK" ? "The project satisfies its configured quality gate." : "At least one configured gate condition is outside its acceptable threshold. Resolve blockers before production promotion."}</p></div>
               <div className="ratings"><span>RATINGS</span>{[["Reliability", "reliability_rating"], ["Security", "security_rating"], ["Maintainability", "sqale_rating"]].map(([l,k]) => <div key={k}><p>{l}</p><b className={ratingTone(report.metrics[k])}>{report.metrics[k] || "—"}</b></div>)}</div>
-            </div></section>
-            <section className="report-section trend-section"><div className="section-title"><span>02</span><div><h3>Analysis trends</h3><p>How the project’s quality measures have changed across recent analyses.</p></div></div><div className="trend-grid">
+            </div></section>}
+            {(reportType === "executive" || reportType === "full") && <section className="report-section trend-section"><div className="section-title"><span>{reportType === "executive" ? "02" : "01"}</span><div><h3>Analysis trends</h3><p>How the project’s quality measures have changed across recent analyses.</p></div></div><div className="trend-grid">
               <TrendChart title="Reliability" data={report.history || []} series={[{ key: "reliability", label: "Issues", color: "#71358f" }]} />
               <TrendChart title="Security" data={report.history || []} series={[{ key: "security", label: "Issues", color: "#d4573f" }]} />
               <TrendChart title="Maintainability" data={report.history || []} series={[{ key: "maintainability", label: "Issues", color: "#8a55a5" }]} />
               <TrendChart title="Coverage and duplication" data={report.history || []} series={[{ key: "coverage", label: "Coverage", color: "#3e8b6f" }, { key: "duplication", label: "Duplication", color: "#d18b35" }]} />
-            </div></section>
-            <section className="report-section"><div className="section-title"><span>03</span><div><h3>Quality gate conditions</h3><p>Measured against the policy assigned in Sonar.</p></div></div><div className="condition-table"><div className="tr th"><span>Condition</span><span>Actual</span><span>Target</span><span>Status</span></div>{report.gate.conditions.map((c, i) => <div className="tr" key={i}><span>{c.metric.replaceAll("_", " ")}</span><span>{c.actual || "—"}</span><span>{c.threshold || "Configured"}</span><span className={c.status === "OK" ? "ok" : "error"}>{c.status === "OK" ? "Pass" : "Review"}</span></div>)}</div></section>
-            <section className="report-section breakdown-section"><div className="section-title"><span>04</span><div><h3>Issue distribution</h3><p>Current unresolved issues grouped using Sonar’s complete facet totals.</p></div></div><div className="breakdown-grid">
+            </div></section>}
+            {(reportType === "executive" || reportType === "full") && <section className="report-section"><div className="section-title"><span>{reportType === "executive" ? "03" : "02"}</span><div><h3>Quality gate conditions</h3><p>Measured against the policy assigned in Sonar.</p></div></div><div className="condition-table"><div className="tr th"><span>Condition</span><span>Actual</span><span>Target</span><span>Status</span></div>{report.gate.conditions.map((c, i) => <div className="tr" key={i}><span>{c.metric.replaceAll("_", " ")}</span><span>{c.actual || "—"}</span><span>{c.threshold || "Configured"}</span><span className={c.status === "OK" ? "ok" : "error"}>{c.status === "OK" ? "Pass" : "Review"}</span></div>)}</div></section>}
+            {(reportType === "executive" || reportType === "full") && <section className="report-section breakdown-section"><div className="section-title"><span>{reportType === "executive" ? "04" : "03"}</span><div><h3>Issue distribution</h3><p>Current unresolved issues grouped using Sonar’s complete facet totals.</p></div></div><div className="breakdown-grid">
               <div className="breakdown-table"><div className="breakdown-heading"><span>Severity</span><span>Open issues</span></div>{["BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO"].map(key => <div key={key}><span><i className={`severity-dot ${key.toLowerCase()}`} />{key.charAt(0) + key.slice(1).toLowerCase()}</span><strong>{report.issueBreakdown?.severities?.[key] ?? 0}</strong></div>)}</div>
               <div className="breakdown-table"><div className="breakdown-heading"><span>Software quality</span><span>Open issues</span></div>{[["RELIABILITY", "Reliability"], ["SECURITY", "Security"], ["MAINTAINABILITY", "Maintainability"]].map(([key, label]) => <div key={key}><span>{label}</span><strong>{report.issueBreakdown?.qualities?.[key] ?? 0}</strong></div>)}</div>
-            </div></section>
-            <section className="report-section"><div className="section-title"><span>05</span><div><h3>{reportType === "owasp" ? "OWASP security findings" : reportType === "cwe" ? "CWE weakness register" : "Priority issue register"}</h3><p>{filteredFindings.length} priority findings shown, ordered by severity.</p></div></div><div className="findings">{filteredFindings.map(f => <div className="finding" key={f.key}><span className={`severity ${f.severity.toLowerCase()}`}>{f.severity}</span><div><h4>{f.message}</h4><p>{f.component}{f.line ? `:${f.line}` : ""}</p><div><code>{f.rule}</code><span>{f.type.replaceAll("_", " ")}</span>{f.effort && <span>Effort {f.effort}</span>}</div></div><b>→</b></div>)}{!filteredFindings.length && <div className="empty">No matching findings returned for this framework.</div>}</div></section>
+            </div></section>}
+            {(reportType === "owasp" || reportType === "cwe") && <section className="report-section framework-overview"><div className="section-title"><span>01</span><div><h3>{reportType === "owasp" ? "OWASP exposure overview" : "CWE weakness overview"}</h3><p>{reportType === "owasp" ? "Security findings mapped to OWASP categories returned by Sonar." : "Detected weaknesses grouped by their CWE tags."}</p></div></div><div className="framework-summary">
+              <div><span>Matching findings</span><strong>{filteredFindings.length}</strong></div><div><span>Security rating</span><strong className={ratingTone(report.metrics.security_rating)}>{report.metrics.security_rating || "—"}</strong></div><div><span>Security hotspots</span><strong>{report.metrics.security_hotspots ?? 0}</strong></div>
+            </div><div className="framework-table"><div className="framework-row framework-head"><span>{reportType === "owasp" ? "OWASP category" : "CWE category"}</span><span>Findings</span></div>{frameworkGroups.map(([label, count]) => <div className="framework-row" key={label}><span>{label}</span><strong>{count}</strong></div>)}{!frameworkGroups.length && <div className="empty">No framework tags were returned for the selected project and branch.</div>}</div></section>}
+            <section className="report-section"><div className="section-title"><span>{reportType === "executive" ? "05" : reportType === "full" ? "04" : "02"}</span><div><h3>{reportType === "owasp" ? "OWASP security findings" : reportType === "cwe" ? "CWE weakness register" : reportType === "full" ? "Complete engineering issue register" : "Priority issue register"}</h3><p>{reportType === "executive" ? `${Math.min(filteredFindings.length, 10)} highest-priority findings shown for management review.` : `${filteredFindings.length} matching findings shown, ordered by severity.`}</p></div></div><div className="findings">{(reportType === "executive" ? filteredFindings.slice(0, 10) : filteredFindings).map(f => <div className="finding" key={f.key}><span className={`severity ${f.severity.toLowerCase()}`}>{f.severity}</span><div><h4>{f.message}</h4><p>{f.component}{f.line ? `:${f.line}` : ""}</p><div><code>{f.rule}</code><span>{f.type.replaceAll("_", " ")}</span>{f.effort && <span>Effort {f.effort}</span>}</div></div><b>→</b></div>)}{!filteredFindings.length && <div className="empty">No matching findings returned for this report.</div>}</div></section>
             <footer className="report-footer"><img className="footer-logo" src="/codebase-technologies-logo.png" alt="Codebase Technologies" /><p>Generated from Sonar analysis data · {report.source === "demo" ? "Demonstration" : "Live source"}</p></footer>
           </article>
         </div>}

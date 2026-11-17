@@ -189,6 +189,14 @@
 .breakdown-heading span{font-size:7px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a7c92}
 .severity-dot{width:7px;height:7px;border-radius:50%;background:#9a8da2}
 .severity-dot.blocker{background:#9f243d}.severity-dot.critical{background:#d4573f}.severity-dot.major{background:#d18b35}.severity-dot.minor{background:#6f86ad}.severity-dot.info{background:#81908a}
+.framework-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0 0 41px}
+.framework-summary>div{padding:16px;border:1px solid #e9e2ed;border-radius:10px;background:#faf8fb}
+.framework-summary span{display:block;font-size:7px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8d7f95}
+.framework-summary strong{display:block;margin-top:8px;font-size:22px;font-weight:650;color:#382345}
+.framework-table{margin:14px 0 0 41px;overflow:hidden;border:1px solid #e8e1ec;border-radius:10px}
+.framework-row{min-height:40px;padding:0 15px;display:grid;grid-template-columns:1fr 90px;align-items:center;border-top:1px solid #eee9f1}
+.framework-row:first-child{border-top:0}.framework-row span{font-size:8px;color:#584963}.framework-row strong{text-align:right;font-size:10px;color:#34233e}
+.framework-head{min-height:34px;background:#faf8fb}.framework-head span{font-size:7px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a7c92}.framework-head span:last-child{text-align:right}
 
 @media(max-width:700px){
   .report-paper{border-radius:12px}.report-brand-row,.report-title-row,.report-meta,.rating-overview,.metric-strip,.report-section,.report-footer{padding-left:20px;padding-right:20px}
@@ -196,8 +204,9 @@
   .report-title-row{grid-template-columns:1fr;gap:20px}.gate{max-width:230px}
   .report-meta{grid-template-columns:1fr 1fr}.report-meta div:nth-child(2){border-right:0}
   .rating-overview{grid-template-columns:1fr}.metric-strip{grid-template-columns:1fr 1fr}
-  .signal-grid,.condition-table,.findings,.trend-grid,.breakdown-grid{margin-left:0}
+  .signal-grid,.condition-table,.findings,.trend-grid,.breakdown-grid,.framework-summary,.framework-table{margin-left:0}
   .trend-grid,.breakdown-grid{grid-template-columns:1fr}
+  .framework-summary{grid-template-columns:1fr}
 }
 
 @media print{
@@ -216,4 +225,5 @@
   .trend-section{break-before:page;page-break-before:always}
   .trend-grid{gap:3mm;margin-top:5mm}.trend-card{padding:4mm 4mm 2mm;break-inside:avoid;page-break-inside:avoid}
   .trend-chart{max-height:48mm}.breakdown-grid,.breakdown-table{break-inside:avoid;page-break-inside:avoid}
+  .framework-summary,.framework-table{break-inside:avoid;page-break-inside:avoid}
 }

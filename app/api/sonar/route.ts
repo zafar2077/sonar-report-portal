@@ -49,7 +49,7 @@ function demoReport(project: string, branch: string) {
       sqale_rating: "A",
     },
     findings: [
-      { key: "demo-1", severity: "CRITICAL", type: "VULNERABILITY", message: "Use a cryptographically secure mechanism for sensitive operations.", component: "src/security/session.ts", line: 42, rule: "typescript:S2245", effort: "30min", status: "OPEN", tags: ["owasp-a02", "cwe"] },
+      { key: "demo-1", severity: "CRITICAL", type: "VULNERABILITY", message: "Use a cryptographically secure mechanism for sensitive operations.", component: "src/security/session.ts", line: 42, rule: "typescript:S2245", effort: "30min", status: "OPEN", tags: ["owasp-a02", "cwe-330"] },
       { key: "demo-2", severity: "MAJOR", type: "CODE_SMELL", message: "Refactor this function to reduce its cognitive complexity.", component: "src/reports/generator.ts", line: 118, rule: "typescript:S3776", effort: "45min", status: "OPEN", tags: [] },
       { key: "demo-3", severity: "MAJOR", type: "BUG", message: "Handle the rejected promise or remove this redundant catch block.", component: "src/api/sonar.ts", line: 76, rule: "typescript:S2737", effort: "15min", status: "OPEN", tags: [] },
     ],
