@@ -16,9 +16,32 @@ type Report = {
   gate: { status: string; conditions: { metric: string; status: string; actual?: string; threshold?: string }[] };
   metrics: Record<string, string | number>;
   findings: Finding[];
+  issueBreakdown?: { severities: Record<string, number>; qualities: Record<string, number> };
+  history?: { date: string; reliability?: number; security?: number; maintainability?: number; coverage?: number; duplication?: number }[];
   generatedAt: string;
   source: "live" | "demo";
 };
+
+type TrendKey = "reliability" | "security" | "maintainability" | "coverage" | "duplication";
+
+function TrendChart({ title, data, series }: { title: string; data: NonNullable<Report["history"]>; series: { key: TrendKey; label: string; color: string }[] }) {
+  const width = 420, height = 150, left = 34, right = 14, top = 20, bottom = 28;
+  const plotWidth = width - left - right, plotHeight = height - top - bottom;
+  if (data.length < 2) return <div className="trend-card"><div className="trend-head"><strong>{title}</strong></div><div className="trend-empty">Historical measures are not yet available for this project.</div></div>;
+  const pointsFor = (key: TrendKey) => {
+    const values = data.map(point => Number(point[key] ?? 0));
+    const min = Math.min(...values), max = Math.max(...values), range = max - min || 1;
+    return values.map((value, index) => `${left + (index / (values.length - 1)) * plotWidth},${top + plotHeight - ((value - min) / range) * plotHeight}`).join(" ");
+  };
+  return <div className="trend-card">
+    <div className="trend-head"><strong>{title}</strong><div>{series.map(item => <span key={item.key}><i style={{ background: item.color }} />{item.label}</span>)}</div></div>
+    <svg className="trend-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${title} trend`}>
+      {[0, 1, 2, 3].map(line => <line key={line} x1={left} x2={width - right} y1={top + line * plotHeight / 3} y2={top + line * plotHeight / 3} className="chart-grid" />)}
+      {series.map(item => <polyline key={item.key} points={pointsFor(item.key)} fill="none" stroke={item.color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />)}
+      <text x={left} y={height - 7}>{displayDate(data[0].date)}</text><text x={width - right} y={height - 7} textAnchor="end">{displayDate(data[data.length - 1].date)}</text>
+    </svg>
+  </div>;
+}
 
 const reportTypes: { id: ReportType; title: string; description: string; badge: string }[] = [
   { id: "executive", title: "Executive overview", description: "Release-ready summary for management and governance.", badge: "Recommended" },
@@ -31,6 +54,23 @@ const metricLabels: Record<string, string> = {
   reliability_issues: "Reliability issues", security_issues: "Security issues", security_hotspots: "Security hotspots",
   maintainability_issues: "Maintainability issues", coverage: "Coverage", duplicated_lines_density: "Duplication",
 };
+
+const headlineMetrics = [
+  "reliability_issues", "security_issues", "security_hotspots",
+  "maintainability_issues", "coverage", "duplicated_lines_density",
+];
+
+const qualityRatings = [
+  ["Reliability", "reliability_rating", "reliability_issues"],
+  ["Security", "security_rating", "security_issues"],
+  ["Maintainability", "sqale_rating", "maintainability_issues"],
+] as const;
+
+function displayDate(value?: string) {
+  if (!value) return "Latest analysis";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+}
 
 function ratingTone(value: string | number) {
   if (["A", "0", 0].includes(value)) return "good";
@@ -126,18 +166,19 @@ export default function ReportStudio({ user }: { user: PublicUser }) {
         <div className="brand"><img className="brand-logo" src="/codebase-technologies-logo.png" alt="Codebase Technologies" /></div>
         <nav aria-label="Main navigation">
           <a className="active" href="#create"><span>✦</span> Create report</a>
-    
+          <a href="#reports"><span>▤</span> Reports</a>
+          <a href="#projects"><span>◇</span> Projects</a>
         </nav>
         <div className="sidebar-foot">
           <div className={`connection ${connected ? "online" : ""}`}><i />{connected ? "Sonar connected" : "Sonar disconnected"}</div>
-         
+          <button className="settings">⚙ <span>Connection settings</span></button>
           <div className="profile"><div>{user.name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()}</div><p><strong>{user.name}</strong><span>{user.role === "admin" ? "Report administrator" : "Report viewer"}</span></p></div>
         </div>
       </aside>
 
       <section className="workspace" id="create">
         <AccountControls user={user} />
-        <header className="topbar"><div><h1>Codebase CodeWatch</h1><span><i>“Controlling complexity is the essence of computer programming.”</i> — Brian Kernighan</span></div><div className="status-pill" role="status"><i />{notice}</div></header>
+        <header className="topbar"><div><span>REPORT STUDIO</span><h1>Turn code analysis into a decision.</h1></div><div className="status-pill" role="status"><i />{notice}</div></header>
 
         {!report && <div className="builder">
           <section className="builder-main">
@@ -169,15 +210,45 @@ export default function ReportStudio({ user }: { user: PublicUser }) {
         {report && <div className="report-view" id="reports">
           <div className="report-actions"><button onClick={() => setReport(null)}>← New report</button><div><button onClick={exportCsv}>↓ CSV</button><button className="primary" onClick={() => window.print()}>Export PDF</button></div></div>
           <article className="report-paper">
-            <header className="report-cover"><div><img className="report-logo" src="/codebase-technologies-logo.png" alt="Codebase Technologies" /><span>CODE HEALTH REPORT</span><h2>{report.project.name}</h2><p>{report.project.key} · {report.project.branch || branch}</p></div><div className={`gate ${report.gate.status === "OK" ? "pass" : "fail"}`}><span>QUALITY GATE</span><strong>{report.gate.status === "OK" ? "Passed" : "Failed"}</strong></div></header>
-            <div className="report-meta"><span>{reportTypes.find(t => t.id === reportType)?.title}</span><span>Analysis: {report.project.lastAnalysis || "Latest"}</span><span>Generated: {new Date(report.generatedAt).toLocaleString()}</span></div>
-            <section className="metric-strip">{["reliability_issues", "security_issues", "security_hotspots", "maintainability_issues", "coverage", "duplicated_lines_density"].map(k => <div key={k}><span>{metricLabels[k]}</span><strong className={ratingTone(report.metrics[k])}>{report.metrics[k] ?? "0"}{["coverage", "duplicated_lines_density"].includes(k) ? "%" : ""}</strong></div>)}</section>
+            <header className="report-cover">
+              <div className="report-brand-row"><img className="report-logo" src="/codebase-technologies-logo.png" alt="Codebase Technologies" /><span>CODE QUALITY · EXECUTIVE REPORT</span></div>
+              <div className="report-title-row">
+                <div><span className="report-kicker">{reportTypes.find(t => t.id === reportType)?.title}</span><h2>{report.project.name}</h2><p>{report.project.key}</p></div>
+                <div className={`gate ${report.gate.status === "OK" ? "pass" : "fail"}`}><span>QUALITY GATE</span><strong>{report.gate.status === "OK" ? "Passed" : "Failed"}</strong><small>{report.gate.status === "OK" ? "Policy requirements met" : "Action required before release"}</small></div>
+              </div>
+              <div className="report-meta">
+                <div><span>Branch</span><strong>{report.project.branch || branch}</strong></div>
+                <div><span>Analysis date</span><strong>{displayDate(report.project.lastAnalysis)}</strong></div>
+                <div><span>Generated</span><strong>{displayDate(report.generatedAt)}</strong></div>
+                <div><span>Data source</span><strong>{report.source === "demo" ? "Demonstration" : "Live Sonar"}</strong></div>
+              </div>
+            </header>
+
+            <section className="rating-overview" aria-label="Software quality ratings">
+              {qualityRatings.map(([label, ratingKey, issueKey]) => <div className="rating-card" key={ratingKey}>
+                <div><span>{label}</span><small>{metricLabels[issueKey]}</small></div>
+                <strong className={ratingTone(report.metrics[ratingKey])}>{report.metrics[ratingKey] || "—"}</strong>
+                <b>{report.metrics[issueKey] ?? "0"}</b>
+              </div>)}
+            </section>
+
+            <section className="metric-strip" aria-label="Analysis metrics">{headlineMetrics.map(k => <div key={k}><span>{metricLabels[k]}</span><strong className={ratingTone(report.metrics[k])}>{report.metrics[k] ?? "0"}{["coverage", "duplicated_lines_density"].includes(k) ? "%" : ""}</strong></div>)}</section>
             <section className="report-section"><div className="section-title"><span>01</span><div><h3>Executive summary</h3><p>The release posture at a glance.</p></div></div><div className="signal-grid">
               <div className="risk-callout"><span>RELEASE DECISION</span><h4>{report.gate.status === "OK" ? "Ready with monitoring" : "Remediation required"}</h4><p>{report.gate.status === "OK" ? "The project satisfies its configured quality gate." : "At least one configured gate condition is outside its acceptable threshold. Resolve blockers before production promotion."}</p></div>
               <div className="ratings"><span>RATINGS</span>{[["Reliability", "reliability_rating"], ["Security", "security_rating"], ["Maintainability", "sqale_rating"]].map(([l,k]) => <div key={k}><p>{l}</p><b className={ratingTone(report.metrics[k])}>{report.metrics[k] || "—"}</b></div>)}</div>
             </div></section>
-            <section className="report-section"><div className="section-title"><span>02</span><div><h3>Quality gate conditions</h3><p>Measured against the policy assigned in Sonar.</p></div></div><div className="condition-table"><div className="tr th"><span>Condition</span><span>Actual</span><span>Target</span><span>Status</span></div>{report.gate.conditions.map((c, i) => <div className="tr" key={i}><span>{c.metric.replaceAll("_", " ")}</span><span>{c.actual || "—"}</span><span>{c.threshold || "Configured"}</span><span className={c.status === "OK" ? "ok" : "error"}>{c.status === "OK" ? "Pass" : "Review"}</span></div>)}</div></section>
-            <section className="report-section"><div className="section-title"><span>03</span><div><h3>{reportType === "owasp" ? "OWASP security findings" : reportType === "cwe" ? "CWE weakness register" : "Priority issue register"}</h3><p>{filteredFindings.length} priority findings shown, ordered by severity.</p></div></div><div className="findings">{filteredFindings.map(f => <div className="finding" key={f.key}><span className={`severity ${f.severity.toLowerCase()}`}>{f.severity}</span><div><h4>{f.message}</h4><p>{f.component}{f.line ? `:${f.line}` : ""}</p><div><code>{f.rule}</code><span>{f.type.replaceAll("_", " ")}</span>{f.effort && <span>Effort {f.effort}</span>}</div></div><b>→</b></div>)}{!filteredFindings.length && <div className="empty">No matching findings returned for this framework.</div>}</div></section>
+            <section className="report-section trend-section"><div className="section-title"><span>02</span><div><h3>Analysis trends</h3><p>How the project’s quality measures have changed across recent analyses.</p></div></div><div className="trend-grid">
+              <TrendChart title="Reliability" data={report.history || []} series={[{ key: "reliability", label: "Issues", color: "#71358f" }]} />
+              <TrendChart title="Security" data={report.history || []} series={[{ key: "security", label: "Issues", color: "#d4573f" }]} />
+              <TrendChart title="Maintainability" data={report.history || []} series={[{ key: "maintainability", label: "Issues", color: "#8a55a5" }]} />
+              <TrendChart title="Coverage and duplication" data={report.history || []} series={[{ key: "coverage", label: "Coverage", color: "#3e8b6f" }, { key: "duplication", label: "Duplication", color: "#d18b35" }]} />
+            </div></section>
+            <section className="report-section"><div className="section-title"><span>03</span><div><h3>Quality gate conditions</h3><p>Measured against the policy assigned in Sonar.</p></div></div><div className="condition-table"><div className="tr th"><span>Condition</span><span>Actual</span><span>Target</span><span>Status</span></div>{report.gate.conditions.map((c, i) => <div className="tr" key={i}><span>{c.metric.replaceAll("_", " ")}</span><span>{c.actual || "—"}</span><span>{c.threshold || "Configured"}</span><span className={c.status === "OK" ? "ok" : "error"}>{c.status === "OK" ? "Pass" : "Review"}</span></div>)}</div></section>
+            <section className="report-section breakdown-section"><div className="section-title"><span>04</span><div><h3>Issue distribution</h3><p>Current unresolved issues grouped using Sonar’s complete facet totals.</p></div></div><div className="breakdown-grid">
+              <div className="breakdown-table"><div className="breakdown-heading"><span>Severity</span><span>Open issues</span></div>{["BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO"].map(key => <div key={key}><span><i className={`severity-dot ${key.toLowerCase()}`} />{key.charAt(0) + key.slice(1).toLowerCase()}</span><strong>{report.issueBreakdown?.severities?.[key] ?? 0}</strong></div>)}</div>
+              <div className="breakdown-table"><div className="breakdown-heading"><span>Software quality</span><span>Open issues</span></div>{[["RELIABILITY", "Reliability"], ["SECURITY", "Security"], ["MAINTAINABILITY", "Maintainability"]].map(([key, label]) => <div key={key}><span>{label}</span><strong>{report.issueBreakdown?.qualities?.[key] ?? 0}</strong></div>)}</div>
+            </div></section>
+            <section className="report-section"><div className="section-title"><span>05</span><div><h3>{reportType === "owasp" ? "OWASP security findings" : reportType === "cwe" ? "CWE weakness register" : "Priority issue register"}</h3><p>{filteredFindings.length} priority findings shown, ordered by severity.</p></div></div><div className="findings">{filteredFindings.map(f => <div className="finding" key={f.key}><span className={`severity ${f.severity.toLowerCase()}`}>{f.severity}</span><div><h4>{f.message}</h4><p>{f.component}{f.line ? `:${f.line}` : ""}</p><div><code>{f.rule}</code><span>{f.type.replaceAll("_", " ")}</span>{f.effort && <span>Effort {f.effort}</span>}</div></div><b>→</b></div>)}{!filteredFindings.length && <div className="empty">No matching findings returned for this framework.</div>}</div></section>
             <footer className="report-footer"><img className="footer-logo" src="/codebase-technologies-logo.png" alt="Codebase Technologies" /><p>Generated from Sonar analysis data · {report.source === "demo" ? "Demonstration" : "Live source"}</p></footer>
           </article>
         </div>}
