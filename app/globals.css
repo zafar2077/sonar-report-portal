@@ -163,9 +163,13 @@
 .condition-table{margin:20px 0 0 41px;border-color:#e8e1ec;border-radius:10px}
 .tr{min-height:44px;border-color:#eee9f1}.tr.th{background:#faf8fb}
 .tr span{font-size:9.5px;font-weight:550}.tr.th span{font-size:8.5px;font-weight:750;color:#75677d}
-.findings{margin:18px 0 0 41px}
-.finding{grid-template-columns:68px 1fr 16px;gap:14px;padding:15px 0;border-color:#eee9f1}
-.finding h4{font-size:12.5px;font-weight:700;line-height:1.4;color:#34233e}.finding p{font-size:9.5px;font-weight:550;line-height:1.45;color:#6d6075}.finding>b{font-size:13px}
+.findings{margin:20px 0 0 41px}
+.finding-head{display:grid;grid-template-columns:78px minmax(0,1fr) 22px;gap:17px;padding:10px 0;border-bottom:1px solid #dcd2e1}
+.finding-head span{font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#75667e}
+.finding{grid-template-columns:78px 1fr 22px;gap:17px;padding:20px 0;border-color:#e7dfea;align-items:start}
+.finding h4{max-width:760px;margin-bottom:7px;font-size:15px;font-weight:750;line-height:1.45;letter-spacing:-.005em;color:#2f1e39}
+.finding p{margin-bottom:11px;font-size:11px;font-weight:600;line-height:1.5;color:#62536b}
+.finding>b{font-size:15px}
 .report-footer{height:58px;padding:0 38px;background:#54226f}
 .footer-logo{width:104px;mix-blend-mode:screen}.report-footer p{font-size:7px;letter-spacing:.03em;color:#dacbe1}
 .trend-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0 0 41px}
@@ -219,7 +223,9 @@
 .finding-link{align-self:start;color:#71358f;text-decoration:none;font-size:14px;font-weight:700;line-height:1}
 .finding-link:hover{color:#4f1d68;transform:translateX(2px)}
 .finding-link.disabled{color:#b9afbf;cursor:default}
-.finding div div span,.finding code{font-size:8.5px;font-weight:600;line-height:1.35}
+.finding div div{display:flex;flex-wrap:wrap;gap:7px}
+.finding div div span,.finding code{font-size:9px;font-weight:650;line-height:1.4;padding:5px 8px}
+.finding>.severity{min-width:76px;padding:7px 6px;font-size:9px;font-weight:800;letter-spacing:.04em}
 .section-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:20px 0 0 41px}
 .section-counts>div{padding:13px 15px;border:1px solid #e9e2ed;border-radius:9px;background:#faf8fb}
 .section-counts span{display:block;font-size:9px;font-weight:750;letter-spacing:.05em;text-transform:uppercase;color:#75667e}
@@ -266,7 +272,14 @@
   .risk-callout p,.ratings p,.executive-standard>p{font-size:8.5pt}
   .tr span,.framework-row span,.breakdown-table span{font-size:8pt}
   .tr.th span,.framework-head span,.breakdown-heading span{font-size:7.5pt}
-  .finding h4{font-size:9.5pt}.finding p{font-size:8pt}.finding div div span,.finding code{font-size:7.5pt}
+  .finding{grid-template-columns:25mm minmax(0,1fr) 6mm;gap:4mm;padding:5mm 0;break-inside:avoid;page-break-inside:avoid}
+  .finding-head{grid-template-columns:25mm minmax(0,1fr) 6mm;gap:4mm;padding:2.5mm 0}
+  .finding-head span{font-size:8.5pt;font-weight:800}
+  .finding h4{margin-bottom:2mm;font-size:12pt;font-weight:750;line-height:1.42}
+  .finding p{margin-bottom:2.5mm;font-size:9.5pt;font-weight:600;line-height:1.45}
+  .finding div div{gap:2mm}.finding div div span,.finding code{padding:1.5mm 2mm;font-size:8.5pt;font-weight:650}
+  .finding>.severity{min-width:23mm;padding:2mm 1.5mm;font-size:8.5pt;font-weight:800}
+  .finding-link{font-size:14pt}
   .report-footer p{font-size:7.5pt}
 
   /* Framework reports use a document layout rather than a dashboard layout. */
@@ -299,7 +312,7 @@
   .report-owasp .framework-grade,.report-cwe .framework-grade{width:9mm;height:9mm;font-size:13pt!important}
   .report-owasp .framework-count,.report-cwe .framework-count{height:8mm}
   .report-owasp .framework-count>strong,.report-cwe .framework-count>strong{font-size:10pt}
-  .report-owasp .finding,.report-cwe .finding{grid-template-columns:24mm 1fr 5mm;gap:4mm;padding:4mm 0}
-  .report-owasp .finding h4,.report-cwe .finding h4{font-size:10.5pt}
-  .report-owasp .finding p,.report-cwe .finding p{font-size:8.5pt}
+  .report-owasp .finding,.report-cwe .finding{grid-template-columns:25mm minmax(0,1fr) 6mm;gap:4mm;padding:5mm 0}
+  .report-owasp .finding h4,.report-cwe .finding h4{font-size:12pt}
+  .report-owasp .finding p,.report-cwe .finding p{font-size:9.5pt}
 }
