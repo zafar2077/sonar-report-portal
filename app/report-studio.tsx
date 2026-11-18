@@ -324,7 +324,7 @@ export default function ReportStudio({ user }: { user: PublicUser }) {
 
         {report && <div className="report-view" id="reports">
           <div className="report-actions"><button onClick={() => setReport(null)}>← New report</button><div><button onClick={exportCsv}>↓ CSV</button><button className="primary" onClick={() => window.print()}>Export PDF</button></div></div>
-          <article className="report-paper">
+          <article className={`report-paper report-${reportType}`}>
             <header className="report-cover">
               <div className="report-brand-row"><img className="report-logo" src="/codebase-technologies-logo.png" alt="Codebase Technologies" /><span>CODE QUALITY · {reportLabel.toUpperCase()}</span></div>
               <div className="report-title-row">

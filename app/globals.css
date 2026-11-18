@@ -202,13 +202,13 @@
 .framework-summary span{display:block;font-size:9px;font-weight:750;letter-spacing:.05em;text-transform:uppercase;color:#75667e}
 .framework-summary strong{display:block;margin-top:8px;font-size:22px;font-weight:650;color:#382345}
 .framework-table{margin:14px 0 0 41px;overflow:hidden;border:1px solid #e8e1ec;border-radius:10px}
-.framework-row{min-height:45px;padding:0 15px;display:grid;grid-template-columns:1fr 150px;align-items:center;border-top:1px solid #eee9f1}
-.framework-row:first-child{border-top:0}.framework-row span{font-size:9.5px;font-weight:600;color:#4f4059}.framework-row strong{text-align:right;font-size:11px;font-weight:750;color:#34233e}
+.framework-row{min-height:52px;padding:0 17px;display:grid;grid-template-columns:1fr 170px;align-items:center;border-top:1px solid #eee9f1}
+.framework-row:first-child{border-top:0}.framework-row>span:first-child{font-size:11px;font-weight:700;line-height:1.35;color:#3e2d49}.framework-row strong{text-align:right;font-size:12px;font-weight:750;color:#34233e}
 .framework-head{min-height:38px;background:#faf8fb}.framework-head span{font-size:8.5px;font-weight:750;letter-spacing:.06em;text-transform:uppercase;color:#75677d}.framework-head span:last-child{text-align:right}
 .framework-count{position:relative;height:24px;display:flex!important;align-items:center;justify-content:flex-end;overflow:hidden;border-radius:6px;background:#f4eff6}
 .framework-count>i{position:absolute;inset:0 auto 0 0;max-width:100%;background:#e5d6ec}.framework-count>strong{position:relative;z-index:1;padding-right:8px;font-size:10px}
-.framework-result{display:grid!important;grid-template-columns:28px 1fr;gap:8px;align-items:center}
-.framework-grade{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:#f1e8f5;font-size:11px!important;text-align:center!important}
+.framework-result{display:grid!important;grid-template-columns:36px 1fr;gap:10px;align-items:center}
+.framework-grade{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:#f1e8f5;font-size:15px!important;font-weight:750!important;text-align:center!important}
 .framework-grade.good{background:#eaf4ee}.framework-grade.warn{background:#fff4e2}.framework-grade.bad{background:#f9e8e4}
 .executive-security-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0 0 41px}
 .executive-standard{position:relative;min-height:96px;padding:16px 70px 15px 16px;border:1px solid #e9e2ed;border-radius:10px;background:#faf8fb}
@@ -240,7 +240,7 @@
 }
 
 @media print{
-  @page{size:A4 portrait;margin:10mm}
+  @page{size:A4 portrait;margin:6mm}
   html,body{background:#fff}
   .workspace{padding:0}.report-paper{border:0;border-radius:0;box-shadow:none}
   .report-brand-row{min-height:16mm;padding:5mm 8mm}.report-title-row{padding:7mm 8mm 6mm}
@@ -268,4 +268,38 @@
   .tr.th span,.framework-head span,.breakdown-heading span{font-size:7.5pt}
   .finding h4{font-size:9.5pt}.finding p{font-size:8pt}.finding div div span,.finding code{font-size:7.5pt}
   .report-footer p{font-size:7.5pt}
+
+  /* Framework reports use a document layout rather than a dashboard layout. */
+  .report-owasp .rating-overview,.report-owasp .metric-strip,
+  .report-cwe .rating-overview,.report-cwe .metric-strip{display:none}
+  .report-owasp .report-brand-row,.report-cwe .report-brand-row{min-height:10mm;padding:2.5mm 7mm}
+  .report-owasp .report-logo,.report-cwe .report-logo{width:34mm}
+  .report-owasp .report-title-row,.report-cwe .report-title-row{grid-template-columns:minmax(0,1fr) 48mm;gap:7mm;padding:4mm 7mm}
+  .report-owasp .report-cover h2,.report-cwe .report-cover h2{font-size:20pt}
+  .report-owasp .report-kicker,.report-cwe .report-kicker{margin-bottom:1.5mm;font-size:7.5pt}
+  .report-owasp .report-cover p,.report-cwe .report-cover p{margin-top:1.5mm;font-size:8pt}
+  .report-owasp .gate,.report-cwe .gate{min-height:0;padding:3mm 4mm;border-radius:2mm}
+  .report-owasp .gate strong,.report-cwe .gate strong{margin:1.5mm 0 1mm;font-size:15pt}
+  .report-owasp .gate small,.report-cwe .gate small{font-size:7pt}
+  .report-owasp .report-meta,.report-cwe .report-meta{padding:0 7mm}
+  .report-owasp .report-meta div,.report-cwe .report-meta div{padding-top:2.5mm;padding-bottom:2.5mm}
+  .report-owasp .report-section,.report-cwe .report-section{padding:5mm 7mm}
+  .report-owasp .section-title h3,.report-cwe .section-title h3{font-size:17pt}
+  .report-owasp .section-title p,.report-cwe .section-title p{font-size:9pt}
+  .report-owasp .framework-summary,.report-cwe .framework-summary{gap:2.5mm;margin:4mm 0 0}
+  .report-owasp .framework-summary>div,.report-cwe .framework-summary>div{padding:3.5mm}
+  .report-owasp .framework-summary span,.report-cwe .framework-summary span{font-size:8pt}
+  .report-owasp .framework-summary strong,.report-cwe .framework-summary strong{margin-top:2mm;font-size:18pt}
+  .report-owasp .framework-table,.report-cwe .framework-table{margin:4mm 0 0;break-inside:auto;page-break-inside:auto;border-radius:2mm}
+  .report-owasp .framework-row,.report-cwe .framework-row{grid-template-columns:minmax(0,1fr) 48mm;min-height:12mm;padding:2mm 4mm;break-inside:avoid;page-break-inside:avoid}
+  .report-owasp .framework-row>span:first-child,.report-cwe .framework-row>span:first-child{font-size:10pt;font-weight:700;line-height:1.3}
+  .report-owasp .framework-head,.report-cwe .framework-head{min-height:9mm}
+  .report-owasp .framework-head span,.report-cwe .framework-head span{font-size:8pt}
+  .report-owasp .framework-result,.report-cwe .framework-result{grid-template-columns:10mm 1fr;gap:2.5mm}
+  .report-owasp .framework-grade,.report-cwe .framework-grade{width:9mm;height:9mm;font-size:13pt!important}
+  .report-owasp .framework-count,.report-cwe .framework-count{height:8mm}
+  .report-owasp .framework-count>strong,.report-cwe .framework-count>strong{font-size:10pt}
+  .report-owasp .finding,.report-cwe .finding{grid-template-columns:24mm 1fr 5mm;gap:4mm;padding:4mm 0}
+  .report-owasp .finding h4,.report-cwe .finding h4{font-size:10.5pt}
+  .report-owasp .finding p,.report-cwe .finding p{font-size:8.5pt}
 }
