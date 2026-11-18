@@ -17,6 +17,7 @@ type Report = {
   metrics: Record<string, string | number>;
   findings: Finding[];
   issueBreakdown?: { severities: Record<string, number>; qualities: Record<string, number> };
+  standards?: { owasp: Record<string, number>; cwe: Record<string, number> };
   history?: { date: string; reliability?: number; security?: number; maintainability?: number; coverage?: number; duplication?: number }[];
   generatedAt: string;
   source: "live" | "demo";
@@ -185,24 +186,38 @@ export default function ReportStudio({ user }: { user: PublicUser }) {
   const selectedProject = projects.find(p => p.key === selected) || projects[0];
   const filteredFindings = useMemo(() => {
     if (!report) return [];
-    if (reportType === "owasp") return report.findings.filter(f => owaspCategory(f.tags) !== null);
-    if (reportType === "cwe") return report.findings.filter(f => { const category = cweCategory(f.tags); return category !== null && cweTop25Codes.has(category); });
+    if (reportType === "owasp") return report.source === "live" ? report.findings : report.findings.filter(f => owaspCategory(f.tags) !== null);
+    if (reportType === "cwe") return report.source === "live" ? report.findings : report.findings.filter(f => { const category = cweCategory(f.tags); return category !== null && cweTop25Codes.has(category); });
     return report.findings;
   }, [report, reportType]);
   const frameworkGroups = useMemo(() => {
     if (!report || (reportType !== "owasp" && reportType !== "cwe")) return [];
     if (reportType === "owasp") {
       const counts = new Map<string, number>(owaspTop10.map(([code]) => [code, 0]));
-      for (const finding of filteredFindings) {
-        const category = owaspCategory(finding.tags);
-        if (category) counts.set(category, (counts.get(category) || 0) + 1);
+      if (report.source === "live" && report.standards?.owasp) {
+        for (const [key, count] of Object.entries(report.standards.owasp)) {
+          const normalized = `A${String(key).replace(/^A/i, "").padStart(2, "0")}`;
+          if (counts.has(normalized)) counts.set(normalized, Number(count));
+        }
+      } else {
+        for (const finding of filteredFindings) {
+          const category = owaspCategory(finding.tags);
+          if (category) counts.set(category, (counts.get(category) || 0) + 1);
+        }
       }
       return owaspTop10.map(([code, title]) => [`${code} · ${title}`, counts.get(code) || 0] as [string, number]);
     }
     const counts = new Map<string, number>(cweTop25.map(([code]) => [code, 0]));
-    for (const finding of filteredFindings) {
-      const category = cweCategory(finding.tags);
-      if (category && cweTop25Codes.has(category)) counts.set(category, (counts.get(category) || 0) + 1);
+    if (report.source === "live" && report.standards?.cwe) {
+      for (const [key, count] of Object.entries(report.standards.cwe)) {
+        const normalized = `CWE-${String(key).replace(/^CWE-/i, "")}`;
+        if (counts.has(normalized)) counts.set(normalized, Number(count));
+      }
+    } else {
+      for (const finding of filteredFindings) {
+        const category = cweCategory(finding.tags);
+        if (category && cweTop25Codes.has(category)) counts.set(category, (counts.get(category) || 0) + 1);
+      }
     }
     return cweTop25.map(([code, title]) => [`${code} · ${title}`, counts.get(code) || 0] as [string, number]);
   }, [filteredFindings, report, reportType]);
@@ -329,8 +344,8 @@ export default function ReportStudio({ user }: { user: PublicUser }) {
               <div className="breakdown-table"><div className="breakdown-heading"><span>Severity</span><span>{severityTotal.toLocaleString()} total</span></div>{severityScale.map(key => { const count = Number(report.issueBreakdown?.severities?.[key] || 0); return <div key={key}><span><i className={`severity-dot ${key.toLowerCase()}`} />{key.charAt(0) + key.slice(1).toLowerCase()}</span><span className="count-cell"><i style={{ width: `${severityTotal ? count / severityTotal * 100 : 0}%` }} /><strong>{count.toLocaleString()}</strong><em>{severityTotal ? Math.round(count / severityTotal * 100) : 0}%</em></span></div>; })}</div>
               <div className="breakdown-table"><div className="breakdown-heading"><span>Software quality</span><span>{qualityTotal.toLocaleString()} total</span></div>{[["RELIABILITY", "Reliability"], ["SECURITY", "Security"], ["MAINTAINABILITY", "Maintainability"]].map(([key, label]) => { const count = Number(report.issueBreakdown?.qualities?.[key] || 0); return <div key={key}><span>{label}</span><span className="count-cell"><i style={{ width: `${qualityTotal ? count / qualityTotal * 100 : 0}%` }} /><strong>{count.toLocaleString()}</strong><em>{qualityTotal ? Math.round(count / qualityTotal * 100) : 0}%</em></span></div>; })}</div>
             </div></section>}
-            {(reportType === "owasp" || reportType === "cwe") && <section className="report-section framework-overview"><div className="section-title"><span>01</span><div><h3>{reportType === "owasp" ? "OWASP exposure overview" : "CWE weakness overview"}</h3><p>{reportType === "owasp" ? "Security findings mapped to OWASP categories returned by Sonar." : "Detected weaknesses grouped by their CWE tags."}</p></div></div><div className="framework-summary">
-              <div><span>Matching findings</span><strong>{filteredFindings.length}</strong></div><div><span>Security rating</span><strong className={ratingTone(report.metrics.security_rating)}>{report.metrics.security_rating || "—"}</strong></div><div><span>Security hotspots</span><strong>{report.metrics.security_hotspots ?? 0}</strong></div>
+            {(reportType === "owasp" || reportType === "cwe") && <section className="report-section framework-overview"><div className="section-title"><span>01</span><div><h3>{reportType === "owasp" ? "OWASP exposure overview" : "CWE weakness overview"}</h3><p>{reportType === "owasp" ? "Security findings mapped through Sonar’s OWASP Top 10 2021 facet." : "Weaknesses mapped through Sonar’s native CWE facet."}</p></div></div><div className="framework-summary">
+              <div><span>Mapped occurrences</span><strong>{frameworkTotal}</strong></div><div><span>Security rating</span><strong className={ratingTone(report.metrics.security_rating)}>{report.metrics.security_rating || "—"}</strong></div><div><span>Security hotspots</span><strong>{report.metrics.security_hotspots ?? 0}</strong></div>
             </div><div className="framework-table"><div className="framework-row framework-head"><span>{reportType === "owasp" ? "OWASP category" : "CWE category"}</span><span>{frameworkTotal.toLocaleString()} mapped</span></div>{frameworkGroups.map(([label, count]) => <div className="framework-row" key={label}><span>{label}</span><span className="framework-count"><i style={{ width: `${count / frameworkMax * 100}%` }} /><strong>{count.toLocaleString()}</strong></span></div>)}{!frameworkGroups.length && <div className="empty">No framework tags were returned for the selected project and branch.</div>}</div></section>}
             <section className="report-section"><div className="section-title"><span>{reportType === "executive" ? "05" : reportType === "full" ? "04" : "02"}</span><div><h3>{reportType === "owasp" ? "OWASP security findings" : reportType === "cwe" ? "CWE weakness register" : reportType === "full" ? "Complete engineering issue register" : "Priority issue register"}</h3><p>{reportType === "executive" ? `${Math.min(filteredFindings.length, 10)} highest-priority findings shown for management review.` : `${filteredFindings.length} matching findings shown, ordered by severity.`}</p></div></div><div className="section-counts findings-counts"><div><span>Findings shown</span><strong>{displayedFindings.length}</strong></div><div className="count-review"><span>High priority</span><strong>{urgentFindings}</strong></div><div><span>Components</span><strong>{affectedComponents}</strong></div></div><div className="findings">{displayedFindings.map(f => <div className="finding" key={f.key}><span className={`severity ${f.severity.toLowerCase()}`}>{f.severity}</span><div><h4>{f.message}</h4><p>{f.component}{f.line ? `:${f.line}` : ""}</p><div><code>{f.rule}</code><span>{f.type.replaceAll("_", " ")}</span>{f.effort && <span>Effort {f.effort}</span>}</div></div><b>→</b></div>)}{!filteredFindings.length && <div className="empty">No matching findings returned for this report.</div>}</div></section>
             <footer className="report-footer"><img className="footer-logo" src="/codebase-technologies-logo.png" alt="Codebase Technologies" /><p>Generated from Sonar analysis data · {report.source === "demo" ? "Demonstration" : "Live source"}</p></footer>

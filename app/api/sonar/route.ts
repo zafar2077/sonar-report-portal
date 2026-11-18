@@ -102,6 +102,7 @@ export async function GET(request: NextRequest) {
     const action = request.nextUrl.searchParams.get("action") || "projects";
     const project = request.nextUrl.searchParams.get("project") || "";
     const branch = request.nextUrl.searchParams.get("branch") || "";
+    const reportType = request.nextUrl.searchParams.get("reportType") || "executive";
 
     if (demoMode()) {
       if (action === "projects") {
@@ -146,7 +147,7 @@ export async function GET(request: NextRequest) {
     const [measures, gate, issues, hotspots, analyses, historyData] = await Promise.all([
       sonar("/api/measures/component", { component: project, metricKeys: METRICS, branch }),
       sonar("/api/qualitygates/project_status", { projectKey: project, branch }),
-      sonar("/api/issues/search", { componentKeys: project, branch, resolved: "false", ps: "100", s: "SEVERITY", asc: "false", facets: "impactSoftwareQualities,impactSeverities,severities" }),
+      sonar("/api/issues/search", { componentKeys: project, branch, issueStatuses: "OPEN,CONFIRMED", ps: "100", s: "SEVERITY", asc: "false", additionalFields: "_all", facets: "impactSoftwareQualities,impactSeverities,severities,owaspTop10-2021,cwe" }),
       sonar("/api/hotspots/search", { projectKey: project, branch, status: "TO_REVIEW", ps: "100" }).catch(() => ({ hotspots: [] })),
       sonar("/api/project_analyses/search", { project: project, branch, ps: "1" }).catch(() => ({ analyses: [] })),
       sonar("/api/measures/search_history", { component: project, metrics: HISTORY_METRICS, branch, ps: "100" }).catch(() => ({ measures: [] })),
@@ -161,13 +162,27 @@ export async function GET(request: NextRequest) {
     const severityFacet = (issues.facets || []).find((facet: { property?: string }) => facet.property === "impactSeverities")
       || (issues.facets || []).find((facet: { property?: string }) => facet.property === "severities");
     const severityCounts = Object.fromEntries((severityFacet?.values || []).map((value: { val: string; count: number }) => [value.val, value.count]));
+    const owaspFacet = (issues.facets || []).find((facet: { property?: string }) => facet.property === "owaspTop10-2021");
+    const owaspCounts = Object.fromEntries((owaspFacet?.values || []).map((value: { val: string; count: number }) => [String(value.val).toUpperCase(), value.count]));
+    const cweFacet = (issues.facets || []).find((facet: { property?: string }) => facet.property === "cwe");
+    const cweCounts = Object.fromEntries((cweFacet?.values || []).filter((value: { val: string }) => value.val !== "unknown").map((value: { val: string; count: number }) => [`CWE-${String(value.val).replace(/^CWE-/i, "")}`, value.count]));
     metricMap.reliability_issues = qualityCounts.RELIABILITY ?? metricMap.bugs ?? 0;
     metricMap.security_issues = qualityCounts.SECURITY ?? metricMap.vulnerabilities ?? 0;
     metricMap.maintainability_issues = qualityCounts.MAINTAINABILITY ?? metricMap.code_smells ?? 0;
-    const issueRows = (issues.issues || []).map((i: Record<string, unknown>) => ({
+    const standardIssues = reportType === "owasp"
+      ? await sonar("/api/issues/search", { componentKeys: project, branch, issueStatuses: "OPEN,CONFIRMED", "owaspTop10-2021": "a1,a2,a3,a4,a5,a6,a7,a8,a9,a10", ps: "100", s: "SEVERITY", asc: "false", additionalFields: "_all" }).catch(() => ({ issues: [] }))
+      : reportType === "cwe"
+        ? await sonar("/api/issues/search", { componentKeys: project, branch, issueStatuses: "OPEN,CONFIRMED", cwe: "79,787,89,352,22,125,78,416,862,434,94,20,77,287,269,502,200,863,918,119,476,798,190,400,306", ps: "100", s: "SEVERITY", asc: "false", additionalFields: "_all" }).catch(() => ({ issues: [] }))
+        : issues;
+    const issueRows = (standardIssues.issues || []).map((i: Record<string, unknown>) => ({
       key: i.key, severity: i.severity || "MAJOR", type: i.type || "ISSUE", message: i.message,
       component: String(i.component || "").replace(`${project}:`, ""), line: i.line, rule: i.rule,
-      effort: i.effort, status: i.status, tags: i.tags || [],
+      effort: i.effort, status: i.status,
+      tags: [
+        ...(Array.isArray(i.tags) ? i.tags : []),
+        ...(Array.isArray(i.owaspTop10) ? i.owaspTop10.map(value => `owasp-${String(value).replace(":2021", "").toLowerCase()}`) : []),
+        ...(Array.isArray(i.cwe) ? i.cwe.map(value => `cwe-${String(value).replace(/^CWE-/i, "")}`) : []),
+      ],
     }));
     const hotspotRows = (hotspots.hotspots || []).map((h: Record<string, unknown>) => ({
       key: h.key, severity: h.vulnerabilityProbability === "HIGH" ? "CRITICAL" : "MAJOR", type: "SECURITY_HOTSPOT",
@@ -192,8 +207,9 @@ export async function GET(request: NextRequest) {
       project: { key: project, name: measures.component?.name || project, branch, lastAnalysis: analyses.analyses?.[0]?.date },
       gate: { status: projectStatus.status || "NONE", conditions: (projectStatus.conditions || []).map((c: Record<string, string>) => ({ metric: c.metricKey, status: c.status, actual: c.actualValue, threshold: `${c.comparator || ""} ${c.errorThreshold || ""}`.trim() })) },
       metrics: metricMap,
-      findings: [...issueRows, ...hotspotRows],
+      findings: reportType === "owasp" || reportType === "cwe" ? issueRows : [...issueRows, ...hotspotRows],
       issueBreakdown: { severities: severityCounts, qualities: qualityCounts },
+      standards: { owasp: owaspCounts, cwe: cweCounts },
       history: [...historyByDate.values()].sort((a, b) => String(a.date).localeCompare(String(b.date))),
       generatedAt: new Date().toISOString(), source: "live",
     });
