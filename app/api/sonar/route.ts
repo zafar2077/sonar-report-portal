@@ -59,6 +59,14 @@ function demoReport(project: string, branch: string) {
       severities: { BLOCKER: 2, HIGH: 9, MEDIUM: 75, LOW: 10, INFO: 0 },
       qualities: { RELIABILITY: 55, SECURITY: 8, MAINTAINABILITY: 1328 },
     },
+    standards: {
+      owasp: { A03: 2, A07: 1 },
+      cwe: { "CWE-79": 1, "CWE-89": 1, "CWE-798": 1 },
+      grades: {
+        owasp: { A03: "D", A07: "D" },
+        cwe: { "CWE-79": "C", "CWE-89": "D", "CWE-798": "D" },
+      },
+    },
     history,
     generatedAt: new Date().toISOString(),
     source: "demo" as const,
@@ -96,6 +104,44 @@ function rating(value?: string) {
   return value ? ({ "1.0": "A", "2.0": "B", "3.0": "C", "4.0": "D", "5.0": "E" }[value] || value) : "—";
 }
 
+const GRADE_WEIGHT: Record<string, number> = {
+  INFO: 1, MINOR: 2, LOW: 2, MAJOR: 3, MEDIUM: 3, CRITICAL: 4, HIGH: 4, BLOCKER: 5,
+};
+
+function securityGrade(weight: number) {
+  return (["A", "B", "C", "D", "E"] as const)[Math.max(0, Math.min(4, weight - 1))];
+}
+
+function standardGrades(rows: Record<string, unknown>[], owaspCounts: Record<string, number>, cweCounts: Record<string, number>) {
+  const owaspWeights: Record<string, number> = {};
+  const cweWeights: Record<string, number> = {};
+  for (const row of rows) {
+    const securityImpact = (Array.isArray(row.impacts) ? row.impacts : []).find((impact: unknown) => {
+      const value = impact as Record<string, unknown>;
+      return String(value.softwareQuality || "").toUpperCase() === "SECURITY";
+    }) as Record<string, unknown> | undefined;
+    const weight = GRADE_WEIGHT[String(securityImpact?.severity || row.severity || "").toUpperCase()] || 2;
+    for (const value of Array.isArray(row.owaspTop10) ? row.owaspTop10 : []) {
+      const match = String(value).toUpperCase().match(/A0?(10|[1-9])/);
+      if (match) {
+        const key = `A${match[1].padStart(2, "0")}`;
+        owaspWeights[key] = Math.max(owaspWeights[key] || 0, weight);
+      }
+    }
+    for (const value of Array.isArray(row.cwe) ? row.cwe : []) {
+      const match = String(value).match(/(\d+)/);
+      if (match) {
+        const key = `CWE-${match[1]}`;
+        cweWeights[key] = Math.max(cweWeights[key] || 0, weight);
+      }
+    }
+  }
+  const grades = (counts: Record<string, number>, weights: Record<string, number>) => Object.fromEntries(
+    Object.entries(counts).map(([key, count]) => [key, count > 0 ? securityGrade(weights[key] || 2) : "A"]),
+  );
+  return { owasp: grades(owaspCounts, owaspWeights), cwe: grades(cweCounts, cweWeights) };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await requireApiUser();
@@ -116,7 +162,7 @@ export async function GET(request: NextRequest) {
       throw new AppError(400, "Invalid Sonar action.");
     }
 
-    const { organization } = config();
+    const { organization, baseUrl } = config();
     if (action === "projects") {
       const data = await sonar("/api/components/search", { qualifiers: "TRK", ps: "500", organization });
       const projects = (data.components || [])
@@ -147,7 +193,7 @@ export async function GET(request: NextRequest) {
     const [measures, gate, issues, hotspots, analyses, historyData] = await Promise.all([
       sonar("/api/measures/component", { component: project, metricKeys: METRICS, branch }),
       sonar("/api/qualitygates/project_status", { projectKey: project, branch }),
-      sonar("/api/issues/search", { componentKeys: project, branch, issueStatuses: "OPEN,CONFIRMED", ps: "100", s: "SEVERITY", asc: "false", additionalFields: "_all", facets: "impactSoftwareQualities,impactSeverities,severities,owaspTop10-2021,cwe" }),
+      sonar("/api/issues/search", { componentKeys: project, branch, issueStatuses: "OPEN,CONFIRMED", ps: "500", s: "SEVERITY", asc: "false", additionalFields: "_all", facets: "impactSoftwareQualities,impactSeverities,severities,owaspTop10-2021,cwe" }),
       sonar("/api/hotspots/search", { projectKey: project, branch, status: "TO_REVIEW", ps: "100" }).catch(() => ({ hotspots: [] })),
       sonar("/api/project_analyses/search", { project: project, branch, ps: "1" }).catch(() => ({ analyses: [] })),
       sonar("/api/measures/search_history", { component: project, metrics: HISTORY_METRICS, branch, ps: "100" }).catch(() => ({ measures: [] })),
@@ -163,21 +209,26 @@ export async function GET(request: NextRequest) {
       || (issues.facets || []).find((facet: { property?: string }) => facet.property === "severities");
     const severityCounts = Object.fromEntries((severityFacet?.values || []).map((value: { val: string; count: number }) => [value.val, value.count]));
     const owaspFacet = (issues.facets || []).find((facet: { property?: string }) => facet.property === "owaspTop10-2021");
-    const owaspCounts = Object.fromEntries((owaspFacet?.values || []).map((value: { val: string; count: number }) => [String(value.val).toUpperCase(), value.count]));
+    const owaspCounts = Object.fromEntries((owaspFacet?.values || []).flatMap((value: { val: string; count: number }) => {
+      const match = String(value.val).toUpperCase().match(/A0?(10|[1-9])/);
+      return match ? [[`A${match[1].padStart(2, "0")}`, value.count]] : [];
+    }));
     const cweFacet = (issues.facets || []).find((facet: { property?: string }) => facet.property === "cwe");
     const cweCounts = Object.fromEntries((cweFacet?.values || []).filter((value: { val: string }) => value.val !== "unknown").map((value: { val: string; count: number }) => [`CWE-${String(value.val).replace(/^CWE-/i, "")}`, value.count]));
+    const grades = standardGrades(issues.issues || [], owaspCounts, cweCounts);
     metricMap.reliability_issues = qualityCounts.RELIABILITY ?? metricMap.bugs ?? 0;
     metricMap.security_issues = qualityCounts.SECURITY ?? metricMap.vulnerabilities ?? 0;
     metricMap.maintainability_issues = qualityCounts.MAINTAINABILITY ?? metricMap.code_smells ?? 0;
     const standardIssues = reportType === "owasp"
-      ? await sonar("/api/issues/search", { componentKeys: project, branch, issueStatuses: "OPEN,CONFIRMED", "owaspTop10-2021": "a1,a2,a3,a4,a5,a6,a7,a8,a9,a10", ps: "100", s: "SEVERITY", asc: "false", additionalFields: "_all" }).catch(() => ({ issues: [] }))
+      ? await sonar("/api/issues/search", { componentKeys: project, branch, issueStatuses: "OPEN,CONFIRMED", "owaspTop10-2021": "a1,a2,a3,a4,a5,a6,a7,a8,a9,a10", ps: "500", s: "SEVERITY", asc: "false", additionalFields: "_all" }).catch(() => ({ issues: [] }))
       : reportType === "cwe"
-        ? await sonar("/api/issues/search", { componentKeys: project, branch, issueStatuses: "OPEN,CONFIRMED", cwe: "79,787,89,352,22,125,78,416,862,434,94,20,77,287,269,502,200,863,918,119,476,798,190,400,306", ps: "100", s: "SEVERITY", asc: "false", additionalFields: "_all" }).catch(() => ({ issues: [] }))
+        ? await sonar("/api/issues/search", { componentKeys: project, branch, issueStatuses: "OPEN,CONFIRMED", cwe: "79,787,89,352,22,125,78,416,862,434,94,20,77,287,269,502,200,863,918,119,476,798,190,400,306", ps: "500", s: "SEVERITY", asc: "false", additionalFields: "_all" }).catch(() => ({ issues: [] }))
         : issues;
     const issueRows = (standardIssues.issues || []).map((i: Record<string, unknown>) => ({
       key: i.key, severity: i.severity || "MAJOR", type: i.type || "ISSUE", message: i.message,
       component: String(i.component || "").replace(`${project}:`, ""), line: i.line, rule: i.rule,
       effort: i.effort, status: i.status,
+      url: `${baseUrl}/project/issues?id=${encodeURIComponent(project)}&branch=${encodeURIComponent(branch)}&issues=${encodeURIComponent(String(i.key || ""))}&open=${encodeURIComponent(String(i.key || ""))}`,
       tags: [
         ...(Array.isArray(i.tags) ? i.tags : []),
         ...(Array.isArray(i.owaspTop10) ? i.owaspTop10.map(value => `owasp-${String(value).replace(":2021", "").toLowerCase()}`) : []),
@@ -188,6 +239,7 @@ export async function GET(request: NextRequest) {
       key: h.key, severity: h.vulnerabilityProbability === "HIGH" ? "CRITICAL" : "MAJOR", type: "SECURITY_HOTSPOT",
       message: h.message, component: String(h.component || "").replace(`${project}:`, ""), line: h.line,
       rule: h.ruleKey, status: h.status, tags: h.securityCategory ? [`owasp-${h.securityCategory}`] : [],
+      url: `${baseUrl}/security_hotspots?id=${encodeURIComponent(project)}&branch=${encodeURIComponent(branch)}&hotspots=${encodeURIComponent(String(h.key || ""))}`,
     }));
     const projectStatus = gate.projectStatus || {};
     const historyByDate = new Map<string, Record<string, string | number>>();
@@ -209,7 +261,7 @@ export async function GET(request: NextRequest) {
       metrics: metricMap,
       findings: reportType === "owasp" || reportType === "cwe" ? issueRows : [...issueRows, ...hotspotRows],
       issueBreakdown: { severities: severityCounts, qualities: qualityCounts },
-      standards: { owasp: owaspCounts, cwe: cweCounts },
+      standards: { owasp: owaspCounts, cwe: cweCounts, grades },
       history: [...historyByDate.values()].sort((a, b) => String(a.date).localeCompare(String(b.date))),
       generatedAt: new Date().toISOString(), source: "live",
     });

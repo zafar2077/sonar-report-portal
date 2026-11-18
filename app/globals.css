@@ -197,7 +197,7 @@
 .count-cell>strong{padding-left:8px;font-size:10px}.count-cell>em{padding-right:7px;font-size:7px;font-style:normal;text-align:right;color:#75677d}
 .severity-dot{width:7px;height:7px;border-radius:50%;background:#9a8da2}
 .severity-dot.blocker{background:#9f243d}.severity-dot.critical,.severity-dot.high{background:#d4573f}.severity-dot.major,.severity-dot.medium{background:#d18b35}.severity-dot.minor,.severity-dot.low{background:#6f86ad}.severity-dot.info{background:#81908a}
-.framework-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0 0 41px}
+.framework-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0 0 41px}
 .framework-summary>div{padding:16px;border:1px solid #e9e2ed;border-radius:10px;background:#faf8fb}
 .framework-summary span{display:block;font-size:7px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8d7f95}
 .framework-summary strong{display:block;margin-top:8px;font-size:22px;font-weight:650;color:#382345}
@@ -207,6 +207,18 @@
 .framework-head{min-height:34px;background:#faf8fb}.framework-head span{font-size:7px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a7c92}.framework-head span:last-child{text-align:right}
 .framework-count{position:relative;height:24px;display:flex!important;align-items:center;justify-content:flex-end;overflow:hidden;border-radius:6px;background:#f4eff6}
 .framework-count>i{position:absolute;inset:0 auto 0 0;max-width:100%;background:#e5d6ec}.framework-count>strong{position:relative;z-index:1;padding-right:8px;font-size:10px}
+.framework-result{display:grid!important;grid-template-columns:28px 1fr;gap:8px;align-items:center}
+.framework-grade{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:#f1e8f5;font-size:11px!important;text-align:center!important}
+.framework-grade.good{background:#eaf4ee}.framework-grade.warn{background:#fff4e2}.framework-grade.bad{background:#f9e8e4}
+.executive-security-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0 0 41px}
+.executive-standard{position:relative;min-height:96px;padding:16px 70px 15px 16px;border:1px solid #e9e2ed;border-radius:10px;background:#faf8fb}
+.executive-standard.overall{background:#f7f0fa}
+.executive-standard>span{font-size:7px;font-weight:700;letter-spacing:.08em;color:#8d7f95}
+.executive-standard>strong{position:absolute;right:16px;top:16px;width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:#fff;font-size:18px}
+.executive-standard>p{margin:25px 0 0;font-size:8px;line-height:1.45;color:#6d6075}
+.finding-link{align-self:start;color:#71358f;text-decoration:none;font-size:14px;font-weight:700;line-height:1}
+.finding-link:hover{color:#4f1d68;transform:translateX(2px)}
+.finding-link.disabled{color:#b9afbf;cursor:default}
 .section-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:20px 0 0 41px}
 .section-counts>div{padding:13px 15px;border:1px solid #e9e2ed;border-radius:9px;background:#faf8fb}
 .section-counts span{display:block;font-size:7px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8d7f95}
@@ -220,9 +232,9 @@
   .report-title-row{grid-template-columns:1fr;gap:20px}.gate{max-width:230px}
   .report-meta{grid-template-columns:1fr 1fr}.report-meta div:nth-child(2){border-right:0}
   .rating-overview{grid-template-columns:1fr}.metric-strip{grid-template-columns:1fr 1fr}
-  .signal-grid,.condition-table,.findings,.trend-grid,.breakdown-grid,.framework-summary,.framework-table,.section-counts{margin-left:0}
+  .signal-grid,.condition-table,.findings,.trend-grid,.breakdown-grid,.framework-summary,.framework-table,.section-counts,.executive-security-summary{margin-left:0}
   .trend-grid,.breakdown-grid{grid-template-columns:1fr}
-  .framework-summary{grid-template-columns:1fr}
+  .framework-summary{grid-template-columns:1fr 1fr}.executive-security-summary{grid-template-columns:1fr}
   .section-counts{grid-template-columns:1fr 1fr 1fr}.count-cell{width:118px}
 }
 
@@ -242,5 +254,5 @@
   .trend-section{break-before:page;page-break-before:always}
   .trend-grid{gap:3mm;margin-top:5mm}.trend-card{padding:4mm 4mm 2mm;break-inside:avoid;page-break-inside:avoid}
   .trend-chart{max-height:48mm}.breakdown-grid,.breakdown-table{break-inside:avoid;page-break-inside:avoid}
-  .framework-summary,.framework-table,.section-counts{break-inside:avoid;page-break-inside:avoid}
+  .framework-summary,.framework-table,.section-counts,.executive-security-summary{break-inside:avoid;page-break-inside:avoid}
 }
