@@ -49,12 +49,14 @@ function demoReport(project: string, branch: string) {
       sqale_rating: "A",
     },
     findings: [
-      { key: "demo-1", severity: "CRITICAL", type: "VULNERABILITY", message: "Use a cryptographically secure mechanism for sensitive operations.", component: "src/security/session.ts", line: 42, rule: "typescript:S2245", effort: "30min", status: "OPEN", tags: ["owasp-a02", "cwe-330"] },
+      { key: "demo-1", severity: "CRITICAL", type: "VULNERABILITY", message: "Remove this hard-coded credential and load it from a protected secret store.", component: "src/security/session.ts", line: 42, rule: "typescript:S6437", effort: "30min", status: "OPEN", tags: ["owasp-a07", "cwe-798"] },
       { key: "demo-2", severity: "MAJOR", type: "CODE_SMELL", message: "Refactor this function to reduce its cognitive complexity.", component: "src/reports/generator.ts", line: 118, rule: "typescript:S3776", effort: "45min", status: "OPEN", tags: [] },
       { key: "demo-3", severity: "MAJOR", type: "BUG", message: "Handle the rejected promise or remove this redundant catch block.", component: "src/api/sonar.ts", line: 76, rule: "typescript:S2737", effort: "15min", status: "OPEN", tags: [] },
+      { key: "demo-4", severity: "CRITICAL", type: "VULNERABILITY", message: "Validate and escape this value before including it in a database query.", component: "src/api/search.ts", line: 61, rule: "typescript:S3649", effort: "45min", status: "OPEN", tags: ["owasp-a03", "cwe-89"] },
+      { key: "demo-5", severity: "MAJOR", type: "VULNERABILITY", message: "Encode untrusted output before rendering it in the page.", component: "src/ui/result.tsx", line: 29, rule: "typescript:S5131", effort: "20min", status: "OPEN", tags: ["owasp-a03", "cwe-79"] },
     ],
     issueBreakdown: {
-      severities: { BLOCKER: 2, CRITICAL: 9, MAJOR: 75, MINOR: 10, INFO: 0 },
+      severities: { BLOCKER: 2, HIGH: 9, MEDIUM: 75, LOW: 10, INFO: 0 },
       qualities: { RELIABILITY: 55, SECURITY: 8, MAINTAINABILITY: 1328 },
     },
     history,
@@ -144,7 +146,7 @@ export async function GET(request: NextRequest) {
     const [measures, gate, issues, hotspots, analyses, historyData] = await Promise.all([
       sonar("/api/measures/component", { component: project, metricKeys: METRICS, branch }),
       sonar("/api/qualitygates/project_status", { projectKey: project, branch }),
-      sonar("/api/issues/search", { componentKeys: project, branch, resolved: "false", ps: "100", s: "SEVERITY", asc: "false", facets: "impactSoftwareQualities,severities" }),
+      sonar("/api/issues/search", { componentKeys: project, branch, resolved: "false", ps: "100", s: "SEVERITY", asc: "false", facets: "impactSoftwareQualities,impactSeverities,severities" }),
       sonar("/api/hotspots/search", { projectKey: project, branch, status: "TO_REVIEW", ps: "100" }).catch(() => ({ hotspots: [] })),
       sonar("/api/project_analyses/search", { project: project, branch, ps: "1" }).catch(() => ({ analyses: [] })),
       sonar("/api/measures/search_history", { component: project, metrics: HISTORY_METRICS, branch, ps: "100" }).catch(() => ({ measures: [] })),
@@ -156,7 +158,8 @@ export async function GET(request: NextRequest) {
 
     const qualityFacet = (issues.facets || []).find((facet: { property?: string }) => facet.property === "impactSoftwareQualities");
     const qualityCounts = Object.fromEntries((qualityFacet?.values || []).map((value: { val: string; count: number }) => [value.val, value.count]));
-    const severityFacet = (issues.facets || []).find((facet: { property?: string }) => facet.property === "severities");
+    const severityFacet = (issues.facets || []).find((facet: { property?: string }) => facet.property === "impactSeverities")
+      || (issues.facets || []).find((facet: { property?: string }) => facet.property === "severities");
     const severityCounts = Object.fromEntries((severityFacet?.values || []).map((value: { val: string; count: number }) => [value.val, value.count]));
     metricMap.reliability_issues = qualityCounts.RELIABILITY ?? metricMap.bugs ?? 0;
     metricMap.security_issues = qualityCounts.SECURITY ?? metricMap.vulnerabilities ?? 0;

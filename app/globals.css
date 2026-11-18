@@ -171,10 +171,14 @@
 .trend-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0 0 41px}
 .trend-card{min-width:0;padding:17px 17px 10px;border:1px solid #e9e2ed;border-radius:11px;background:#fff}
 .trend-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.trend-head>strong{font-size:11px;font-weight:700;color:#3a2847}
-.trend-head>div{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
-.trend-head span{display:flex;align-items:center;gap:4px;font-size:7px;color:#8f8197}
-.trend-head i{width:7px;height:7px;border-radius:50%}
+.trend-head>strong{padding-top:4px;font-size:11px;font-weight:700;color:#3a2847}
+.trend-head>div{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px}
+.trend-stat{position:relative;display:grid!important;grid-template-columns:7px auto auto;grid-template-rows:auto auto;align-items:center;column-gap:5px!important;font-size:7px;color:#8f8197}
+.trend-stat>i{grid-row:1/3;width:7px;height:7px;border-radius:50%}
+.trend-stat>b{font-size:15px;font-weight:700;line-height:1;color:#392743}
+.trend-stat>small{font-size:7px;color:#94879c}
+.trend-stat>em{grid-column:3;grid-row:1/3;padding:3px 5px;border-radius:10px;font-size:7px;font-style:normal;font-weight:700}
+.trend-stat>em.worsening{background:#f8ece8;color:#b94b35}.trend-stat>em.improving{background:#eaf4ee;color:#347257}.trend-stat>em.flat{background:#f1edf3;color:#82758a}
 .trend-chart{display:block;width:100%;height:auto;margin-top:8px;overflow:visible}
 .trend-chart .chart-grid{stroke:#eee8f1;stroke-width:1}
 .trend-chart text{font-size:8px;fill:#94879c}
@@ -187,16 +191,28 @@
 .breakdown-table strong{font-size:10px;color:#34233e}
 .breakdown-table .breakdown-heading{min-height:34px;background:#faf8fb}
 .breakdown-heading span{font-size:7px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a7c92}
+.count-cell{position:relative;width:142px;height:24px;display:grid!important;grid-template-columns:1fr 34px;align-items:center;overflow:hidden;border-radius:6px;background:#f4eff6}
+.count-cell>i{position:absolute;inset:0 auto 0 0;max-width:100%;background:#e5d6ec}
+.count-cell>strong,.count-cell>em{position:relative;z-index:1}
+.count-cell>strong{padding-left:8px;font-size:10px}.count-cell>em{padding-right:7px;font-size:7px;font-style:normal;text-align:right;color:#75677d}
 .severity-dot{width:7px;height:7px;border-radius:50%;background:#9a8da2}
-.severity-dot.blocker{background:#9f243d}.severity-dot.critical{background:#d4573f}.severity-dot.major{background:#d18b35}.severity-dot.minor{background:#6f86ad}.severity-dot.info{background:#81908a}
+.severity-dot.blocker{background:#9f243d}.severity-dot.critical,.severity-dot.high{background:#d4573f}.severity-dot.major,.severity-dot.medium{background:#d18b35}.severity-dot.minor,.severity-dot.low{background:#6f86ad}.severity-dot.info{background:#81908a}
 .framework-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0 0 41px}
 .framework-summary>div{padding:16px;border:1px solid #e9e2ed;border-radius:10px;background:#faf8fb}
 .framework-summary span{display:block;font-size:7px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8d7f95}
 .framework-summary strong{display:block;margin-top:8px;font-size:22px;font-weight:650;color:#382345}
 .framework-table{margin:14px 0 0 41px;overflow:hidden;border:1px solid #e8e1ec;border-radius:10px}
-.framework-row{min-height:40px;padding:0 15px;display:grid;grid-template-columns:1fr 90px;align-items:center;border-top:1px solid #eee9f1}
+.framework-row{min-height:40px;padding:0 15px;display:grid;grid-template-columns:1fr 130px;align-items:center;border-top:1px solid #eee9f1}
 .framework-row:first-child{border-top:0}.framework-row span{font-size:8px;color:#584963}.framework-row strong{text-align:right;font-size:10px;color:#34233e}
 .framework-head{min-height:34px;background:#faf8fb}.framework-head span{font-size:7px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a7c92}.framework-head span:last-child{text-align:right}
+.framework-count{position:relative;height:24px;display:flex!important;align-items:center;justify-content:flex-end;overflow:hidden;border-radius:6px;background:#f4eff6}
+.framework-count>i{position:absolute;inset:0 auto 0 0;max-width:100%;background:#e5d6ec}.framework-count>strong{position:relative;z-index:1;padding-right:8px;font-size:10px}
+.section-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:20px 0 0 41px}
+.section-counts>div{padding:13px 15px;border:1px solid #e9e2ed;border-radius:9px;background:#faf8fb}
+.section-counts span{display:block;font-size:7px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8d7f95}
+.section-counts strong{display:block;margin-top:6px;font-size:20px;font-weight:650;color:#382345}
+.section-counts .count-pass{background:#f3f9f5}.section-counts .count-pass strong{color:#347257}
+.section-counts .count-review{background:#fdf5f2}.section-counts .count-review strong{color:#b94b35}
 
 @media(max-width:700px){
   .report-paper{border-radius:12px}.report-brand-row,.report-title-row,.report-meta,.rating-overview,.metric-strip,.report-section,.report-footer{padding-left:20px;padding-right:20px}
@@ -204,9 +220,10 @@
   .report-title-row{grid-template-columns:1fr;gap:20px}.gate{max-width:230px}
   .report-meta{grid-template-columns:1fr 1fr}.report-meta div:nth-child(2){border-right:0}
   .rating-overview{grid-template-columns:1fr}.metric-strip{grid-template-columns:1fr 1fr}
-  .signal-grid,.condition-table,.findings,.trend-grid,.breakdown-grid,.framework-summary,.framework-table{margin-left:0}
+  .signal-grid,.condition-table,.findings,.trend-grid,.breakdown-grid,.framework-summary,.framework-table,.section-counts{margin-left:0}
   .trend-grid,.breakdown-grid{grid-template-columns:1fr}
   .framework-summary{grid-template-columns:1fr}
+  .section-counts{grid-template-columns:1fr 1fr 1fr}.count-cell{width:118px}
 }
 
 @media print{
@@ -225,5 +242,5 @@
   .trend-section{break-before:page;page-break-before:always}
   .trend-grid{gap:3mm;margin-top:5mm}.trend-card{padding:4mm 4mm 2mm;break-inside:avoid;page-break-inside:avoid}
   .trend-chart{max-height:48mm}.breakdown-grid,.breakdown-table{break-inside:avoid;page-break-inside:avoid}
-  .framework-summary,.framework-table{break-inside:avoid;page-break-inside:avoid}
+  .framework-summary,.framework-table,.section-counts{break-inside:avoid;page-break-inside:avoid}
 }
