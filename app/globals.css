@@ -323,4 +323,29 @@
   .report-owasp .finding,.report-cwe .finding{grid-template-columns:25mm minmax(0,1fr) 6mm;gap:4mm;padding:5mm 0}
   .report-owasp .finding h4,.report-cwe .finding h4{font-size:12pt}
   .report-owasp .finding p,.report-cwe .finding p{font-size:9.5pt}
+
+  /* Allow Chrome to fragment long reports without clipping page one. */
+  .app-shell,.workspace,.report-view,.report-paper{
+    width:100%!important;
+    max-width:none!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+    position:static!important;
+  }
+  .report-paper{display:block!important}
+  .report-cover{break-inside:avoid!important;page-break-inside:avoid!important;break-after:avoid-page}
+  .report-owasp .framework-overview,.report-cwe .framework-overview{
+    break-inside:auto!important;
+    page-break-inside:auto!important;
+  }
+  .report-owasp .framework-table,.report-cwe .framework-table{
+    overflow:visible!important;
+    break-inside:auto!important;
+    page-break-inside:auto!important;
+  }
+  .report-owasp .framework-row,.report-cwe .framework-row{
+    break-inside:avoid!important;
+    page-break-inside:avoid!important;
+  }
 }
