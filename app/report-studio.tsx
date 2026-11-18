@@ -20,6 +20,7 @@ type Report = {
   standards?: {
     owasp: Record<string, number>; cwe: Record<string, number>;
     grades?: { owasp: Record<string, string>; cwe: Record<string, string> };
+    summaryGrades?: { owasp: string; cwe: string };
   };
   history?: { date: string; reliability?: number; security?: number; maintainability?: number; coverage?: number; duplication?: number }[];
   generatedAt: string;
@@ -246,7 +247,8 @@ export default function ReportStudio({ user }: { user: PublicUser }) {
   ] as const).map(([label, codes, counts, grades]) => {
     const mapped = codes.reduce((sum, code) => sum + Number(counts[code] || 0), 0);
     const active = codes.filter(code => Number(counts[code] || 0) > 0).length;
-    return { label, mapped, active, grade: worstGrade(codes.map(code => grades[code] || (Number(counts[code] || 0) > 0 ? "B" : "A"))) };
+    const summaryKey = label === "OWASP Top 10" ? "owasp" : "cwe";
+    return { label, mapped, active, grade: report?.standards?.summaryGrades?.[summaryKey] || worstGrade(codes.map(code => grades[code] || (Number(counts[code] || 0) > 0 ? "B" : "A"))) };
   });
   const displayedFindings = reportType === "executive" ? filteredFindings.slice(0, 10) : filteredFindings;
   const urgentFindings = displayedFindings.filter(finding => ["BLOCKER", "CRITICAL", "HIGH"].includes(finding.severity)).length;

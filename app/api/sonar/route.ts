@@ -66,6 +66,7 @@ function demoReport(project: string, branch: string) {
         owasp: { A03: "D", A07: "D" },
         cwe: { "CWE-79": "C", "CWE-89": "D", "CWE-798": "D" },
       },
+      summaryGrades: { owasp: "D", cwe: "D" },
     },
     history,
     generatedAt: new Date().toISOString(),
@@ -110,6 +111,21 @@ const GRADE_WEIGHT: Record<string, number> = {
 
 function securityGrade(weight: number) {
   return (["A", "B", "C", "D", "E"] as const)[Math.max(0, Math.min(4, weight - 1))];
+}
+
+function worstGradeValue(values: string[]) {
+  const order = ["A", "B", "C", "D", "E"];
+  return values.reduce((worst, value) => order.indexOf(value) > order.indexOf(worst) ? value : worst, "A");
+}
+
+function gradeFromFacets(data: Record<string, unknown>) {
+  const facets = Array.isArray(data.facets) ? data.facets as { property?: string; values?: { val: string; count: number }[] }[] : [];
+  const facet = facets.find(item => item.property === "impactSeverities")
+    || facets.find(item => item.property === "severities");
+  const worst = (facet?.values || []).reduce((weight, value) => value.count > 0
+    ? Math.max(weight, GRADE_WEIGHT[String(value.val).toUpperCase()] || 2)
+    : weight, 0);
+  return worst ? securityGrade(worst) : "A";
 }
 
 function standardGrades(rows: Record<string, unknown>[], owaspCounts: Record<string, number>, cweCounts: Record<string, number>) {
@@ -215,7 +231,28 @@ export async function GET(request: NextRequest) {
     }));
     const cweFacet = (issues.facets || []).find((facet: { property?: string }) => facet.property === "cwe");
     const cweCounts = Object.fromEntries((cweFacet?.values || []).filter((value: { val: string }) => value.val !== "unknown").map((value: { val: string; count: number }) => [`CWE-${String(value.val).replace(/^CWE-/i, "")}`, value.count]));
-    const grades = standardGrades(issues.issues || [], owaspCounts, cweCounts);
+    const inferredGrades = standardGrades(issues.issues || [], owaspCounts, cweCounts);
+    const gradeSearch = (filter: Record<string, string>) => sonar("/api/issues/search", {
+      componentKeys: project, branch, issueStatuses: "OPEN,CONFIRMED", ps: "1",
+      facets: "impactSeverities,severities", ...filter,
+    }).then((data: Record<string, unknown>) => gradeFromFacets(data));
+    const grades = { owasp: { ...inferredGrades.owasp }, cwe: { ...inferredGrades.cwe } };
+    if (reportType === "owasp") {
+      const active = Object.entries(owaspCounts).filter(([, count]) => count > 0);
+      const resolved = await Promise.all(active.map(async ([code]) => [code, await gradeSearch({ "owaspTop10-2021": code.toLowerCase().replace(/^a0?/, "a") })] as const));
+      Object.assign(grades.owasp, Object.fromEntries(resolved));
+    } else if (reportType === "cwe") {
+      const active = Object.entries(cweCounts).filter(([, count]) => count > 0);
+      const resolved = await Promise.all(active.map(async ([code]) => [code, await gradeSearch({ cwe: code.replace(/^CWE-/i, "") })] as const));
+      Object.assign(grades.cwe, Object.fromEntries(resolved));
+    }
+    const summaryGrades = reportType === "executive" ? {
+      owasp: await gradeSearch({ "owaspTop10-2021": "a1,a2,a3,a4,a5,a6,a7,a8,a9,a10" }),
+      cwe: await gradeSearch({ cwe: "79,787,89,352,22,125,78,416,862,434,94,20,77,287,269,502,200,863,918,119,476,798,190,400,306" }),
+    } : {
+      owasp: worstGradeValue(Object.values(grades.owasp)),
+      cwe: worstGradeValue(Object.values(grades.cwe)),
+    };
     metricMap.reliability_issues = qualityCounts.RELIABILITY ?? metricMap.bugs ?? 0;
     metricMap.security_issues = qualityCounts.SECURITY ?? metricMap.vulnerabilities ?? 0;
     metricMap.maintainability_issues = qualityCounts.MAINTAINABILITY ?? metricMap.code_smells ?? 0;
@@ -261,7 +298,7 @@ export async function GET(request: NextRequest) {
       metrics: metricMap,
       findings: reportType === "owasp" || reportType === "cwe" ? issueRows : [...issueRows, ...hotspotRows],
       issueBreakdown: { severities: severityCounts, qualities: qualityCounts },
-      standards: { owasp: owaspCounts, cwe: cweCounts, grades },
+      standards: { owasp: owaspCounts, cwe: cweCounts, grades, summaryGrades },
       history: [...historyByDate.values()].sort((a, b) => String(a.date).localeCompare(String(b.date))),
       generatedAt: new Date().toISOString(), source: "live",
     });
