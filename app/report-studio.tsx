@@ -73,6 +73,19 @@ const owaspTop10 = [
   ["A10", "Server-Side Request Forgery (SSRF)"],
 ] as const;
 
+const owaspDescriptions: Record<string, string> = {
+  A01: "Failures that allow users to act outside their intended permissions or access protected data and functions.",
+  A02: "Weak or missing protection for sensitive data while stored or transmitted.",
+  A03: "Untrusted input reaches an interpreter without sufficient validation, filtering or escaping.",
+  A04: "Security weaknesses caused by missing threat modelling, controls or secure design patterns.",
+  A05: "Unsafe defaults, incomplete hardening, exposed services or incorrectly configured security controls.",
+  A06: "Use of unsupported, outdated or vulnerable libraries, frameworks and software components.",
+  A07: "Weaknesses in identity confirmation, authentication and session management.",
+  A08: "Code, dependencies or delivery processes that do not adequately protect software and data integrity.",
+  A09: "Insufficient logging, monitoring and response that prevents attacks from being detected and investigated.",
+  A10: "Server-side requests use untrusted destinations without adequate validation and restriction.",
+};
+
 const cweTop25 = [
   ["CWE-79", "Cross-site Scripting"], ["CWE-787", "Out-of-bounds Write"],
   ["CWE-89", "SQL Injection"], ["CWE-352", "Cross-Site Request Forgery"],
@@ -214,7 +227,10 @@ export default function ReportStudio({ user }: { user: PublicUser }) {
           if (category) counts.set(category, (counts.get(category) || 0) + 1);
         }
       }
-      return owaspTop10.map(([code, title]) => [`${code} · ${title}`, counts.get(code) || 0, report.standards?.grades?.owasp?.[code] || ((counts.get(code) || 0) > 0 ? "B" : "A")] as [string, number, string]);
+      return owaspTop10.map(([code, title]) => ({
+        code, title, description: owaspDescriptions[code], count: counts.get(code) || 0,
+        grade: report.standards?.grades?.owasp?.[code] || ((counts.get(code) || 0) > 0 ? "B" : "A"),
+      }));
     }
     const counts = new Map<string, number>(cweTop25.map(([code]) => [code, 0]));
     if (report.source === "live" && report.standards?.cwe) {
@@ -228,7 +244,10 @@ export default function ReportStudio({ user }: { user: PublicUser }) {
         if (category && cweTop25Codes.has(category)) counts.set(category, (counts.get(category) || 0) + 1);
       }
     }
-    return cweTop25.map(([code, title]) => [`${code} · ${title}`, counts.get(code) || 0, report.standards?.grades?.cwe?.[code] || ((counts.get(code) || 0) > 0 ? "B" : "A")] as [string, number, string]);
+    return cweTop25.map(([code, title]) => ({
+      code, title, description: "A recognized software weakness mapped by Sonar to this CWE category.", count: counts.get(code) || 0,
+      grade: report.standards?.grades?.cwe?.[code] || ((counts.get(code) || 0) > 0 ? "B" : "A"),
+    }));
   }, [filteredFindings, report, reportType]);
   const reportLabel = reportType === "executive" ? "Executive report" : reportType === "owasp" ? "OWASP Top 10 report" : reportType === "cwe" ? "CWE Top 25 report" : "Full engineering report";
   const severityScale = report && ["HIGH", "MEDIUM", "LOW"].some(key => key in (report.issueBreakdown?.severities || {}))
@@ -238,9 +257,9 @@ export default function ReportStudio({ user }: { user: PublicUser }) {
   const qualityTotal = ["RELIABILITY", "SECURITY", "MAINTAINABILITY"].reduce((sum, key) => sum + Number(report?.issueBreakdown?.qualities?.[key] || 0), 0);
   const gatePassCount = report?.gate.conditions.filter(condition => condition.status === "OK").length || 0;
   const gateReviewCount = (report?.gate.conditions.length || 0) - gatePassCount;
-  const frameworkTotal = frameworkGroups.reduce((sum, [, count]) => sum + count, 0);
-  const frameworkMax = Math.max(1, ...frameworkGroups.map(([, count]) => count));
-  const frameworkGrade = worstGrade(frameworkGroups.map(([, , grade]) => grade));
+  const frameworkTotal = frameworkGroups.reduce((sum, item) => sum + item.count, 0);
+  const frameworkMax = Math.max(1, ...frameworkGroups.map(item => item.count));
+  const frameworkGrade = worstGrade(frameworkGroups.map(item => item.grade));
   const executiveStandards = ([
     ["OWASP Top 10", owaspTop10.map(([code]) => code), report?.standards?.owasp || {}, report?.standards?.grades?.owasp || {}],
     ["CWE Top 25", cweTop25.map(([code]) => code), report?.standards?.cwe || {}, report?.standards?.grades?.cwe || {}],
@@ -368,7 +387,7 @@ export default function ReportStudio({ user }: { user: PublicUser }) {
             </div></section>}
             {(reportType === "owasp" || reportType === "cwe") && <section className="report-section framework-overview"><div className="section-title"><span>01</span><div><h3>{reportType === "owasp" ? "OWASP exposure overview" : "CWE weakness overview"}</h3><p>{reportType === "owasp" ? "Security findings mapped through Sonar’s OWASP Top 10 2021 facet." : "Weaknesses mapped through Sonar’s native CWE facet."}</p></div></div><div className="framework-summary">
               <div><span>Mapped occurrences</span><strong>{frameworkTotal}</strong></div><div><span>Framework grade</span><strong className={ratingTone(frameworkGrade)}>{frameworkGrade}</strong></div><div><span>Security rating</span><strong className={ratingTone(report.metrics.security_rating)}>{report.metrics.security_rating || "—"}</strong></div><div><span>Security hotspots</span><strong>{report.metrics.security_hotspots ?? 0}</strong></div>
-            </div><div className="framework-table"><div className="framework-row framework-head"><span>{reportType === "owasp" ? "OWASP category" : "CWE category"}</span><span>Grade · findings</span></div>{frameworkGroups.map(([label, count, grade]) => <div className="framework-row" key={label}><span>{label}</span><span className="framework-result"><b className={`framework-grade ${ratingTone(grade)}`}>{grade}</b><span className="framework-count"><i style={{ width: `${count / frameworkMax * 100}%` }} /><strong>{count.toLocaleString()}</strong></span></span></div>)}{!frameworkGroups.length && <div className="empty">No framework tags were returned for the selected project and branch.</div>}</div></section>}
+            </div><div className="framework-table"><div className="framework-row framework-head"><span>{reportType === "owasp" ? "OWASP category" : "CWE category"}</span><span>Grade · findings</span></div>{frameworkGroups.map(item => <div className="framework-row" key={item.code}><div className="framework-identity"><strong>{item.code}</strong><div><b>{item.title}</b><p>{item.description}</p></div></div><span className="framework-result"><b className={`framework-grade ${ratingTone(item.grade)}`}>{item.grade}</b><span className="framework-count"><i style={{ width: `${item.count / frameworkMax * 100}%` }} /><strong>{item.count.toLocaleString()}</strong></span></span></div>)}{!frameworkGroups.length && <div className="empty">No framework tags were returned for the selected project and branch.</div>}</div></section>}
             <section className="report-section"><div className="section-title"><span>{reportType === "executive" ? "05" : reportType === "full" ? "04" : "02"}</span><div><h3>{reportType === "owasp" ? "OWASP security findings" : reportType === "cwe" ? "CWE weakness register" : reportType === "full" ? "Complete engineering issue register" : "Priority issue register"}</h3><p>{reportType === "executive" ? `${Math.min(filteredFindings.length, 10)} highest-priority findings shown for management review.` : `${filteredFindings.length} matching findings shown, ordered by severity.`}</p></div></div><div className="section-counts findings-counts"><div><span>Findings shown</span><strong>{displayedFindings.length}</strong></div><div className="count-review"><span>High priority</span><strong>{urgentFindings}</strong></div><div><span>Components</span><strong>{affectedComponents}</strong></div></div><div className="findings"><div className="finding-head"><span>Severity</span><span>Finding and location</span><span /></div>{displayedFindings.map(f => <div className="finding" key={f.key}><span className={`severity ${f.severity.toLowerCase()}`}>{f.severity}</span><div><h4>{f.message}</h4><p>{f.component}{f.line ? `:${f.line}` : ""}</p><div><code>{f.rule}</code><span>{f.type.replaceAll("_", " ")}</span>{f.effort && <span>Effort {f.effort}</span>}</div></div>{f.url ? <a className="finding-link" href={f.url} target="_blank" rel="noreferrer" aria-label="Open finding in Sonar" title="Open in Sonar">→</a> : <b className="finding-link disabled" aria-hidden="true">→</b>}</div>)}{!filteredFindings.length && <div className="empty">No matching findings returned for this report.</div>}</div></section>
             <footer className="report-footer"><img className="footer-logo" src="/codebase-technologies-logo.png" alt="Codebase Technologies" /><p>Generated from Sonar analysis data · {report.source === "demo" ? "Demonstration" : "Live source"}</p></footer>
           </article>

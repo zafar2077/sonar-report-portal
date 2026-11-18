@@ -206,13 +206,18 @@
 .framework-summary span{display:block;font-size:9px;font-weight:750;letter-spacing:.05em;text-transform:uppercase;color:#75667e}
 .framework-summary strong{display:block;margin-top:8px;font-size:22px;font-weight:650;color:#382345}
 .framework-table{margin:14px 0 0 41px;overflow:hidden;border:1px solid #e8e1ec;border-radius:10px}
-.framework-row{min-height:52px;padding:0 17px;display:grid;grid-template-columns:1fr 170px;align-items:center;border-top:1px solid #eee9f1}
-.framework-row:first-child{border-top:0}.framework-row>span:first-child{font-size:11px;font-weight:700;line-height:1.35;color:#3e2d49}.framework-row strong{text-align:right;font-size:12px;font-weight:750;color:#34233e}
+.framework-row{min-height:92px;padding:14px 18px;display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:18px;align-items:center;border-top:1px solid #e7dfea}
+.framework-row:first-child{border-top:0}.framework-row strong{text-align:right;font-size:12px;font-weight:750;color:#34233e}
 .framework-head{min-height:38px;background:#faf8fb}.framework-head span{font-size:8.5px;font-weight:750;letter-spacing:.06em;text-transform:uppercase;color:#75677d}.framework-head span:last-child{text-align:right}
+.framework-head{padding-top:0;padding-bottom:0}
+.framework-identity{min-width:0;display:grid;grid-template-columns:72px minmax(0,1fr);gap:16px;align-items:center}
+.framework-identity>strong{font-size:30px;font-weight:800;line-height:1;text-align:left;color:#54226f}
+.framework-identity>div>b{display:block;font-size:15px;font-weight:800;line-height:1.25;color:#2f1e39}
+.framework-identity p{max-width:650px;margin:6px 0 0;font-size:11px;font-weight:550;line-height:1.4;color:#65576d}
 .framework-count{position:relative;height:24px;display:flex!important;align-items:center;justify-content:flex-end;overflow:hidden;border-radius:6px;background:#f4eff6}
 .framework-count>i{position:absolute;inset:0 auto 0 0;max-width:100%;background:#e5d6ec}.framework-count>strong{position:relative;z-index:1;padding-right:8px;font-size:10px}
-.framework-result{display:grid!important;grid-template-columns:36px 1fr;gap:10px;align-items:center}
-.framework-grade{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:#f1e8f5;font-size:15px!important;font-weight:750!important;text-align:center!important}
+.framework-result{display:grid!important;grid-template-columns:44px 1fr;gap:12px;align-items:center}
+.framework-grade{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:#f1e8f5;font-size:18px!important;font-weight:800!important;text-align:center!important}
 .framework-grade.good{background:#eaf4ee}.framework-grade.warn{background:#fff4e2}.framework-grade.bad{background:#f9e8e4}
 .executive-security-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0 0 41px}
 .executive-standard{position:relative;min-height:96px;padding:16px 70px 15px 16px;border:1px solid #e9e2ed;border-radius:10px;background:#faf8fb}
@@ -304,12 +309,15 @@
   .report-owasp .framework-summary span,.report-cwe .framework-summary span{font-size:8pt}
   .report-owasp .framework-summary strong,.report-cwe .framework-summary strong{margin-top:2mm;font-size:18pt}
   .report-owasp .framework-table,.report-cwe .framework-table{margin:4mm 0 0;break-inside:auto;page-break-inside:auto;border-radius:2mm}
-  .report-owasp .framework-row,.report-cwe .framework-row{grid-template-columns:minmax(0,1fr) 48mm;min-height:12mm;padding:2mm 4mm;break-inside:avoid;page-break-inside:avoid}
-  .report-owasp .framework-row>span:first-child,.report-cwe .framework-row>span:first-child{font-size:10pt;font-weight:700;line-height:1.3}
+  .report-owasp .framework-row,.report-cwe .framework-row{grid-template-columns:minmax(0,1fr) 48mm;min-height:17mm;padding:2.5mm 4mm;break-inside:avoid;page-break-inside:avoid}
+  .report-owasp .framework-identity,.report-cwe .framework-identity{grid-template-columns:18mm minmax(0,1fr);gap:3mm}
+  .report-owasp .framework-identity>strong,.report-cwe .framework-identity>strong{font-size:22pt;font-weight:800}
+  .report-owasp .framework-identity>div>b,.report-cwe .framework-identity>div>b{font-size:10.5pt;font-weight:800}
+  .report-owasp .framework-identity p,.report-cwe .framework-identity p{margin-top:1mm;font-size:8pt;font-weight:550;line-height:1.3}
   .report-owasp .framework-head,.report-cwe .framework-head{min-height:9mm}
   .report-owasp .framework-head span,.report-cwe .framework-head span{font-size:8pt}
-  .report-owasp .framework-result,.report-cwe .framework-result{grid-template-columns:10mm 1fr;gap:2.5mm}
-  .report-owasp .framework-grade,.report-cwe .framework-grade{width:9mm;height:9mm;font-size:13pt!important}
+  .report-owasp .framework-result,.report-cwe .framework-result{grid-template-columns:11mm 1fr;gap:2.5mm}
+  .report-owasp .framework-grade,.report-cwe .framework-grade{width:11mm;height:11mm;font-size:15pt!important}
   .report-owasp .framework-count,.report-cwe .framework-count{height:8mm}
   .report-owasp .framework-count>strong,.report-cwe .framework-count>strong{font-size:10pt}
   .report-owasp .finding,.report-cwe .finding{grid-template-columns:25mm minmax(0,1fr) 6mm;gap:4mm;padding:5mm 0}
